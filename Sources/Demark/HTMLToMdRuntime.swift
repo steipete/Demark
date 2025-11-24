@@ -18,6 +18,8 @@ final class HTMLToMdRuntime: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.demark.html-to-md", qos: .userInitiated)
     private var isInitialized = false
     
+    private let bulletPlaceholder = "{bulletplaceholder}"
+    
     // MARK: - Public Methods
     
     /// Convert HTML to Markdown using html-to-md
@@ -51,9 +53,7 @@ final class HTMLToMdRuntime: @unchecked Sendable {
                 }
                 
                 // html-to-md doesn't have bulletListMarker, it uses bulletMarker
-                if options.bulletListMarker != "-" {
-                    optionsDict["bulletMarker"] = options.bulletListMarker
-                }
+                optionsDict["bulletMarker"] = "*"
                 
                 do {
                     // Convert options to JSON
@@ -67,6 +67,7 @@ final class HTMLToMdRuntime: @unchecked Sendable {
                         .replacingOccurrences(of: "\\", with: "\\\\")
                         .replacingOccurrences(of: "`", with: "\\`")
                         .replacingOccurrences(of: "$", with: "\\$")
+                        .replacingOccurrences(of: "<li>", with: "<li>\(bulletPlaceholder)")
                     
                     // Call html-to-md (using html2md function name)
                     let script = """
@@ -85,8 +86,12 @@ final class HTMLToMdRuntime: @unchecked Sendable {
                         throw DemarkError.conversionFailed
                     }
                     
+                    let bulletMarkdown = markdown
+                        .replacingOccurrences(of: "* \(bulletPlaceholder)", with: "\(options.bulletListMarker) ")
+                        .replacingOccurrences(of: "\(bulletPlaceholder)", with: "")
+                    
                     self.logger.info("html-to-md conversion completed")
-                    continuation.resume(returning: markdown)
+                    continuation.resume(returning: bulletMarkdown)
                     
                 } catch {
                     self.logger.error("Conversion error: \(error)")
