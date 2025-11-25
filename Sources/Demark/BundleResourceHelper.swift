@@ -16,27 +16,27 @@ enum BundleResourceHelper {
         // Build list of bundles to search
         var bundles: [Bundle] = [
             Bundle.module,
-            Bundle.main
+            Bundle.main,
         ]
-        
+
         // Add class-specific bundle if provided
-        if let classForBundle = classForBundle {
+        if let classForBundle {
             bundles.append(Bundle(for: classForBundle))
         }
-        
+
         // Search for resource in each bundle
         for bundle in bundles {
             // Try direct resource lookup
             if let path = bundle.path(forResource: resourceName, ofType: ext) {
                 return path
             }
-            
+
             // Try in Resources subdirectory (common in SPM packages)
             if let path = bundle.path(forResource: "Resources/\(resourceName)", ofType: ext) {
                 return path
             }
         }
-        
+
         return nil
     }
 }

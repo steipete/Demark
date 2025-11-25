@@ -22,11 +22,11 @@ let package = Package(
         .executableTarget(
             name: "DemarkExample",
             dependencies: [
-                .product(name: "Demark", package: "Demark")
+                .product(name: "Demark", package: "Demark"),
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
-                .unsafeFlags(["-parse-as-library"])
+                .unsafeFlags(["-parse-as-library"]),
             ]
         ),
     ],

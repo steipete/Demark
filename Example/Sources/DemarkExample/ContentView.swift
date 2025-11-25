@@ -1,9 +1,9 @@
-import SwiftUI
 import Demark
+import SwiftUI
 #if os(iOS)
-import UIKit
+    import UIKit
 #elseif os(macOS)
-import AppKit
+    import AppKit
 #endif
 
 struct ContentView: View {
@@ -14,50 +14,50 @@ struct ContentView: View {
     @State var selectedTab: OutputTab = .source
     @State var options = DemarkOptions()
     @State var selectedEngine: ConversionEngine = .turndown
-    
+
     private let demark = Demark()
-    
+
     enum OutputTab: String, CaseIterable {
         case source = "Source"
         case rendered = "Rendered"
-        
+
         var icon: String {
             switch self {
-            case .source: return "doc.text"
-            case .rendered: return "eye"
+            case .source: "doc.text"
+            case .rendered: "eye"
             }
         }
     }
-    
+
     var body: some View {
         #if os(macOS)
-        macOSLayout
+            macOSLayout
         #else
-        iOSLayout
+            iOSLayout
         #endif
     }
-    
+
     // MARK: - Input Section
-    
+
     var inputHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Label("HTML Input", systemImage: "chevron.left.forwardslash.chevron.right")
                     .font(.title2)
                     .fontWeight(.semibold)
-                
+
                 Spacer()
-                
+
                 sampleHTMLMenu
             }
-            
+
             Text("Paste or type your HTML content below")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
         .padding()
     }
-    
+
     var inputEditor: some View {
         ScrollView {
             TextEditor(text: $htmlInput)
@@ -73,7 +73,7 @@ struct ContentView: View {
         )
         .padding(.horizontal)
     }
-    
+
     var sampleHTMLMenu: some View {
         Menu("Sample HTML") {
             ForEach(SampleHTML.allCases, id: \.self) { sample in
@@ -85,21 +85,21 @@ struct ContentView: View {
         .menuStyle(.borderlessButton)
         .font(.caption)
     }
-    
+
     // MARK: - Options Panel
-    
+
     var optionsPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Conversion Options")
                 .font(.headline)
                 .fontWeight(.semibold)
-            
+
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 16) {
                     Text("Engine:")
                         .frame(width: 110, alignment: .trailing)
                         .foregroundColor(.secondary)
-                    
+
                     Picker("", selection: $selectedEngine) {
                         Text("Turndown (Full Featured)").tag(ConversionEngine.turndown)
                         Text("html-to-md (Fast)").tag(ConversionEngine.htmlToMd)
@@ -109,15 +109,15 @@ struct ContentView: View {
                     .onChange(of: selectedEngine) { _, newValue in
                         options.engine = newValue
                     }
-                    
+
                     Spacer()
                 }
-                
+
                 HStack(spacing: 16) {
                     Text("Heading Style:")
                         .frame(width: 110, alignment: .trailing)
                         .foregroundColor(.secondary)
-                    
+
                     Picker("", selection: $options.headingStyle) {
                         Text("ATX (# Heading)").tag(DemarkHeadingStyle.atx)
                         Text("Setext (Underline)").tag(DemarkHeadingStyle.setext)
@@ -126,15 +126,15 @@ struct ContentView: View {
                     .frame(maxWidth: 300)
                     .disabled(selectedEngine == .htmlToMd)
                     .opacity(selectedEngine == .htmlToMd ? 0.5 : 1.0)
-                    
+
                     Spacer()
                 }
-                
+
                 HStack(spacing: 16) {
                     Text("List Marker:")
                         .frame(width: 110, alignment: .trailing)
                         .foregroundColor(.secondary)
-                    
+
                     Picker("", selection: $options.bulletListMarker) {
                         Text("- (Dash)").tag("-")
                         Text("* (Star)").tag("*")
@@ -142,15 +142,15 @@ struct ContentView: View {
                     }
                     .pickerStyle(.segmented)
                     .frame(maxWidth: 300)
-                    
+
                     Spacer()
                 }
-                
+
                 HStack(spacing: 16) {
                     Text("Code Blocks:")
                         .frame(width: 110, alignment: .trailing)
                         .foregroundColor(.secondary)
-                    
+
                     Picker("", selection: $options.codeBlockStyle) {
                         Text("Fenced (```)").tag(DemarkCodeBlockStyle.fenced)
                         Text("Indented").tag(DemarkCodeBlockStyle.indented)
@@ -159,12 +159,12 @@ struct ContentView: View {
                     .frame(maxWidth: 300)
                     .disabled(selectedEngine == .htmlToMd)
                     .opacity(selectedEngine == .htmlToMd ? 0.5 : 1.0)
-                    
+
                     Spacer()
                 }
             }
             .font(.caption)
-            
+
             if selectedEngine == .htmlToMd {
                 Text("Note: html-to-md only supports ATX headings and fenced code blocks")
                     .font(.caption2)
@@ -178,26 +178,26 @@ struct ContentView: View {
         .padding(.horizontal)
         .padding(.bottom)
     }
-    
+
     // MARK: - Output Section
-    
+
     var outputHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Label("Markdown Output", systemImage: "doc.text")
                     .font(.title2)
                     .fontWeight(.semibold)
-                
+
                 Spacer()
-                
+
                 if isConverting {
                     ProgressView()
                         .scaleEffect(0.8)
                 }
-                
+
                 copyButton
             }
-            
+
             if let error = conversionError {
                 Text("Error: \(error)")
                     .font(.caption)
@@ -214,7 +214,7 @@ struct ContentView: View {
         }
         .padding()
     }
-    
+
     var outputTabs: some View {
         HStack(spacing: 0) {
             ForEach(OutputTab.allCases, id: \.self) { tab in
@@ -231,13 +231,13 @@ struct ContentView: View {
                 }
                 .buttonStyle(.plain)
             }
-            
+
             Spacer()
         }
         .padding(.horizontal)
         .padding(.bottom, 8)
     }
-    
+
     var outputContent: some View {
         Group {
             switch selectedTab {
@@ -249,7 +249,7 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     var markdownSourceView: some View {
         ScrollView {
             VStack(alignment: .leading) {
@@ -258,7 +258,7 @@ struct ContentView: View {
                     .foregroundColor(markdownOutput.isEmpty ? .secondary : .primary)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                
+
                 Spacer()
             }
             .padding()
@@ -272,7 +272,7 @@ struct ContentView: View {
         .padding(.horizontal)
         .padding(.bottom)
     }
-    
+
     private var markdownRenderedView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -284,7 +284,7 @@ struct ContentView: View {
                     MarkdownRenderer(markdown: markdownOutput)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                
+
                 Spacer()
             }
             .padding()
@@ -298,9 +298,9 @@ struct ContentView: View {
         .padding(.horizontal)
         .padding(.bottom)
     }
-    
+
     // MARK: - Action Buttons
-    
+
     var convertButton: some View {
         Button(action: convertHTML) {
             HStack {
@@ -311,7 +311,7 @@ struct ContentView: View {
         .keyboardShortcut(.return, modifiers: .command)
         .disabled(isConverting || htmlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
-    
+
     private var copyButton: some View {
         Button(action: copyMarkdown) {
             Image(systemName: "doc.on.doc")
@@ -319,16 +319,16 @@ struct ContentView: View {
         .disabled(markdownOutput.isEmpty)
         .help("Copy Markdown to Clipboard")
     }
-    
+
     // MARK: - Actions
-    
+
     @MainActor
     func convertHTML() {
         guard !htmlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        
+
         isConverting = true
         conversionError = nil
-        
+
         Task {
             do {
                 let result = try await demark.convertToMarkdown(htmlInput, options: options)
@@ -338,36 +338,36 @@ struct ContentView: View {
                 conversionError = error.localizedDescription
                 markdownOutput = ""
             }
-            
+
             isConverting = false
         }
     }
-    
+
     func copyMarkdown() {
         #if os(macOS)
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(markdownOutput, forType: .string)
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(markdownOutput, forType: .string)
         #elseif os(iOS)
-        UIPasteboard.general.string = markdownOutput
+            UIPasteboard.general.string = markdownOutput
         #endif
     }
-    
+
     // MARK: - Platform Helpers
-    
+
     private var platformBackgroundColor: Color {
         #if os(macOS)
-        return Color(NSColor.textBackgroundColor)
+            return Color(NSColor.textBackgroundColor)
         #else
-        return Color(.systemBackground)
+            return Color(.systemBackground)
         #endif
     }
-    
+
     private var platformControlBackgroundColor: Color {
         #if os(macOS)
-        return Color(NSColor.controlBackgroundColor)
+            return Color(NSColor.controlBackgroundColor)
         #else
-        return Color(.secondarySystemBackground)
+            return Color(.secondarySystemBackground)
         #endif
     }
 }
@@ -379,20 +379,20 @@ enum SampleHTML: CaseIterable {
     case blog
     case documentation
     case complex
-    
+
     var name: String {
         switch self {
-        case .simple: return "Simple HTML"
-        case .blog: return "Blog Post"
-        case .documentation: return "Documentation"
-        case .complex: return "Complex Document"
+        case .simple: "Simple HTML"
+        case .blog: "Blog Post"
+        case .documentation: "Documentation"
+        case .complex: "Complex Document"
         }
     }
-    
+
     var html: String {
         switch self {
         case .simple:
-            return """
+            """
             <h1>Hello World</h1>
             <p>This is a <strong>simple</strong> HTML document with some <em>formatting</em>.</p>
             <ul>
@@ -401,9 +401,9 @@ enum SampleHTML: CaseIterable {
                 <li>Third item</li>
             </ul>
             """
-            
+
         case .blog:
-            return """
+            """
             <article>
                 <h1>My Awesome Blog Post</h1>
                 <p>Welcome to my <strong>amazing</strong> blog! Today I want to share some insights about <em>web development</em>.</p>
@@ -427,9 +427,9 @@ enum SampleHTML: CaseIterable {
                 </code></pre>
             </article>
             """
-            
+
         case .documentation:
-            return """
+            """
             <div class="documentation">
                 <h1>API Documentation</h1>
                 <p>This is the documentation for our <code>amazing-library</code>.</p>
@@ -451,12 +451,12 @@ enum SampleHTML: CaseIterable {
                 <h3>Example</h3>
                 <pre><code class="javascript">
             import { AmazingComponent } from 'amazing-library';
-            
+
             const component = new AmazingComponent({
                 option1: 'value1',
                 option2: true
             });
-            
+
             component.run();
                 </code></pre>
                 
@@ -480,9 +480,9 @@ enum SampleHTML: CaseIterable {
                 </table>
             </div>
             """
-            
+
         case .complex:
-            return """
+            """
             <html>
             <head>
                 <title>Complex Document</title>
@@ -545,7 +545,7 @@ enum SampleHTML: CaseIterable {
             def hello_world():
                 print("Hello, World!")
                 return True
-            
+
             if __name__ == "__main__":
                 hello_world()
                         </code></pre>
@@ -563,6 +563,6 @@ enum SampleHTML: CaseIterable {
             """
         }
     }
-    
+
     static let defaultHTML = SampleHTML.simple.html
 }

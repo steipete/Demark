@@ -16,7 +16,7 @@ public enum DemarkCodeBlockStyle: String, Sendable {
 public enum ConversionEngine: String, Sendable {
     /// Turndown.js - Full featured, handles complex HTML well
     case turndown
-    
+
     /// html-to-md - Lightweight and fast, best for valid HTML
     case htmlToMd
 }
@@ -112,7 +112,7 @@ public struct DemarkOptions: Sendable {
     ///       console.log('hello');
     ///   ```
     public var codeBlockStyle: DemarkCodeBlockStyle = .fenced
-    
+
     /// Conversion engine to use
     ///
     /// - `.turndown`: Full-featured, handles complex/malformed HTML well
@@ -120,7 +120,7 @@ public struct DemarkOptions: Sendable {
     ///
     /// **Default:** `.turndown`
     public var engine: ConversionEngine = .turndown
-    
+
     /// Tags to skip (unwrap content, remove tag wrapper)
     ///
     /// These tags will be removed but their content will be preserved.
@@ -128,7 +128,7 @@ public struct DemarkOptions: Sendable {
     ///
     /// **Default:** `[]`
     public var skipTags: [String] = []
-    
+
     /// Tags to completely ignore (remove tag and all content)
     ///
     /// These tags and all their content will be removed from output.
@@ -136,7 +136,7 @@ public struct DemarkOptions: Sendable {
     ///
     /// **Default:** `[]`
     public var ignoreTags: [String] = []
-    
+
     /// Tags to render as empty (html-to-md only)
     ///
     /// These tags will be emptied but their children will be processed.
@@ -144,7 +144,7 @@ public struct DemarkOptions: Sendable {
     ///
     /// **Default:** `[]`
     public var emptyTags: [String] = []
-    
+
     public init(
         engine: ConversionEngine = .turndown,
         headingStyle: DemarkHeadingStyle = .atx,

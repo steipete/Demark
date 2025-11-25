@@ -10,7 +10,7 @@ let package = Package(
         .iOS(.v17),
         .watchOS(.v10),
         .tvOS(.v17),
-        .visionOS(.v1)
+        .visionOS(.v1),
     ],
     products: [
         .library(
@@ -26,17 +26,17 @@ let package = Package(
             name: "Demark",
             dependencies: [],
             resources: [
-                .process("Resources")
+                .process("Resources"),
             ],
             swiftSettings: [
-                .enableExperimentalFeature("StrictConcurrency")
+                .enableExperimentalFeature("StrictConcurrency"),
             ]
         ),
         .testTarget(
             name: "DemarkTests",
             dependencies: ["Demark"],
             swiftSettings: [
-                .enableExperimentalFeature("StrictConcurrency")
+                .enableExperimentalFeature("StrictConcurrency"),
             ]
         ),
     ],

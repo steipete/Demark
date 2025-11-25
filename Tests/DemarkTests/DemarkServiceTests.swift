@@ -1,6 +1,6 @@
 import Foundation
-import WebKit
 import Testing
+import WebKit
 
 @testable import Demark
 
@@ -541,7 +541,7 @@ struct DemarkServiceTests {
         var largeHTML = "<html><body><h1>Large Document Test</h1>"
 
         // Add 1000 paragraphs with various elements
-        for i in 1 ... 1000 {
+        for i in 1 ... 1_000 {
             largeHTML += """
             <h2>Section \(i)</h2>
             <p>This is paragraph \(i) with <strong>bold text</strong> and <em>italic text</em>. 
@@ -631,7 +631,7 @@ struct DemarkServiceTests {
         let service = Demark()
 
         // Test extremely long single line
-        let longString = String(repeating: "a", count: 50000)
+        let longString = String(repeating: "a", count: 50_000)
         let longLineHTML = "<p>\(longString)</p>"
         let longLineResult = try await service.convertToMarkdown(longLineHTML)
         #expect(longLineResult.contains(longString))
@@ -822,8 +822,10 @@ struct DemarkServiceTests {
         do {
             let result = try await service.convertToMarkdown(emptyElementsHTML)
             // If it doesn't throw, the result should be empty or whitespace only
-            #expect(result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                          "Empty HTML elements should produce empty markdown")
+            #expect(
+                result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                "Empty HTML elements should produce empty markdown"
+            )
         } catch DemarkError.emptyResult {
             // This is the expected behavior - throwing emptyResult error
             // Empty HTML elements correctly triggered emptyResult error
@@ -848,8 +850,10 @@ struct DemarkServiceTests {
         do {
             let result = try await service.convertToMarkdown(invisibleContentHTML)
             // If it doesn't throw, the result should be empty
-            #expect(result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                          "HTML with only invisible content should produce empty markdown")
+            #expect(
+                result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                "HTML with only invisible content should produce empty markdown"
+            )
         } catch DemarkError.emptyResult {
             // This is the expected behavior
             // HTML with only invisible content correctly triggered emptyResult error
@@ -869,8 +873,10 @@ struct DemarkServiceTests {
         do {
             let result = try await service.convertToMarkdown(whitespaceHTML)
             // If it doesn't throw, the result should be empty or whitespace only
-            #expect(result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                          "HTML with only whitespace should produce empty markdown")
+            #expect(
+                result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                "HTML with only whitespace should produce empty markdown"
+            )
         } catch DemarkError.emptyResult {
             // This is acceptable behavior
             // HTML with only whitespace correctly triggered emptyResult error
@@ -895,8 +901,10 @@ struct DemarkServiceTests {
         do {
             let result = try await service.convertToMarkdown(commentOnlyHTML)
             // If it doesn't throw, the result should be empty
-            #expect(result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                          "HTML with only comments should produce empty markdown")
+            #expect(
+                result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                "HTML with only comments should produce empty markdown"
+            )
         } catch DemarkError.emptyResult {
             // This is the expected behavior
             // HTML with only comments correctly triggered emptyResult error
@@ -916,8 +924,10 @@ struct DemarkServiceTests {
         do {
             let result = try await service.convertToMarkdown(malformedEmptyHTML)
             // If it doesn't throw, the result should be empty
-            #expect(result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                          "Malformed empty HTML should produce empty markdown")
+            #expect(
+                result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                "Malformed empty HTML should produce empty markdown"
+            )
         } catch DemarkError.emptyResult {
             // This is acceptable behavior
             // Malformed empty HTML correctly triggered emptyResult error
@@ -938,8 +948,10 @@ struct DemarkServiceTests {
         // Pure whitespace should NOT throw emptyResult error
         let whitespaceString = "   \n\t   "
         let whitespaceResult = try await service.convertToMarkdown(whitespaceString)
-        #expect(whitespaceResult.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                      "Pure whitespace should produce empty result without error")
+        #expect(
+            whitespaceResult.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            "Pure whitespace should produce empty result without error"
+        )
     }
 
     func testEmptyResultError_EdgeCaseBoundaries() async throws {

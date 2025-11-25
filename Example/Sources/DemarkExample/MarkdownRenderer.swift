@@ -1,25 +1,28 @@
 import SwiftUI
 
 // MARK: - Cross-platform Color Extension
+
 #if os(iOS)
-import UIKit
-extension Color {
-    static var textBackgroundColor: Color {
-        Color(UIColor.secondarySystemBackground)
+    import UIKit
+
+    extension Color {
+        static var textBackgroundColor: Color {
+            Color(UIColor.secondarySystemBackground)
+        }
     }
-}
 #else
-import AppKit
-extension Color {
-    static var textBackgroundColor: Color {
-        Color(NSColor.textBackgroundColor)
+    import AppKit
+
+    extension Color {
+        static var textBackgroundColor: Color {
+            Color(NSColor.textBackgroundColor)
+        }
     }
-}
 #endif
 
 struct MarkdownRenderer: View {
     let markdown: String
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             ForEach(parseMarkdown(markdown), id: \.id) { element in
@@ -27,17 +30,17 @@ struct MarkdownRenderer: View {
             }
         }
     }
-    
+
     private func renderElement(_ element: MarkdownElement) -> some View {
         Group {
             switch element.type {
-            case .heading(let level):
+            case let .heading(level):
                 renderHeading(element.content, level: level)
             case .paragraph:
                 renderParagraph(element.content)
-            case .list(let isOrdered):
+            case let .list(isOrdered):
                 renderList(element.items, ordered: isOrdered)
-            case .codeBlock(let language):
+            case let .codeBlock(language):
                 renderCodeBlock(element.content, language: language)
             case .blockquote:
                 renderBlockquote(element.content)
@@ -48,7 +51,7 @@ struct MarkdownRenderer: View {
             }
         }
     }
-    
+
     private func renderHeading(_ text: String, level: Int) -> some View {
         Text(parseInlineMarkdown(text))
             .font(headingFont(for: level))
@@ -56,14 +59,14 @@ struct MarkdownRenderer: View {
             .padding(.vertical, headingSpacing(for: level))
             .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
+
     private func renderParagraph(_ text: String) -> some View {
         Text(parseInlineMarkdown(text))
             .font(.body)
             .padding(.vertical, 2)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
+
     private func renderList(_ items: [String], ordered: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
@@ -71,7 +74,7 @@ struct MarkdownRenderer: View {
                     Text(ordered ? "\(index + 1)." : "•")
                         .font(.body)
                         .frame(width: 20, alignment: .leading)
-                    
+
                     Text(parseInlineMarkdown(item))
                         .font(.body)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -80,10 +83,10 @@ struct MarkdownRenderer: View {
         }
         .padding(.leading, 16)
     }
-    
+
     private func renderCodeBlock(_ code: String, language: String?) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            if let language = language, !language.isEmpty {
+            if let language, !language.isEmpty {
                 HStack {
                     Text(language)
                         .font(.caption)
@@ -91,20 +94,20 @@ struct MarkdownRenderer: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(Color.secondary.opacity(0.1))
-                    
+
                     Spacer()
                 }
             }
-            
+
             ScrollView(.horizontal, showsIndicators: false) {
                 Text(code)
                     .font(.system(.body, design: .monospaced))
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-#if os(macOS)
+            #if os(macOS)
             .background(Color(NSColor.controlBackgroundColor))
-#endif
+            #endif
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
@@ -112,13 +115,13 @@ struct MarkdownRenderer: View {
             )
         }
     }
-    
+
     private func renderBlockquote(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Rectangle()
                 .fill(Color.accentColor)
                 .frame(width: 4)
-            
+
             Text(parseInlineMarkdown(text))
                 .font(.body)
                 .italic()
@@ -127,12 +130,12 @@ struct MarkdownRenderer: View {
         .padding(.leading, 16)
         .padding(.vertical, 8)
     }
-    
+
     private func renderHorizontalRule() -> some View {
         Divider()
             .padding(.vertical, 16)
     }
-    
+
     private func renderTable(_ tableData: TableData?) -> some View {
         Group {
             if let table = tableData {
@@ -141,9 +144,9 @@ struct MarkdownRenderer: View {
                     if !table.headers.isEmpty {
                         renderTableHeader(table.headers)
                     }
-                    
+
                     // Rows
-                    ForEach(Array(table.rows.enumerated()), id: \.offset) { index, row in
+                    ForEach(Array(table.rows.enumerated()), id: \.offset) { _, row in
                         renderTableRow(row)
                     }
                 }
@@ -154,7 +157,7 @@ struct MarkdownRenderer: View {
             }
         }
     }
-    
+
     @ViewBuilder
     private func renderTableHeader(_ headers: [String]) -> some View {
         HStack(spacing: 0) {
@@ -164,7 +167,7 @@ struct MarkdownRenderer: View {
                     .padding(8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.secondary.opacity(0.1))
-                
+
                 if index < headers.count - 1 {
                     Divider()
                 }
@@ -175,7 +178,7 @@ struct MarkdownRenderer: View {
                 .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
         )
     }
-    
+
     @ViewBuilder
     private func renderTableRow(_ row: [String]) -> some View {
         HStack(spacing: 0) {
@@ -184,7 +187,7 @@ struct MarkdownRenderer: View {
                     .font(.body)
                     .padding(8)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                
+
                 if index < row.count - 1 {
                     Divider()
                 }
@@ -196,54 +199,54 @@ struct MarkdownRenderer: View {
                 .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
         )
     }
-    
+
     // MARK: - Inline Markdown Parsing (Simplified)
-    
+
     private func parseInlineMarkdown(_ text: String) -> AttributedString {
         // For the example app, we'll use a simplified approach
         // In a production app, you might want to use a proper markdown parser
-        
+
         var result = text
-        
+
         // Remove markdown syntax for basic rendering
         // Bold (**text** or __text__)
         result = result.replacingOccurrences(of: #"\*\*(.*?)\*\*"#, with: "$1", options: .regularExpression)
         result = result.replacingOccurrences(of: #"__(.*?)__"#, with: "$1", options: .regularExpression)
-        
+
         // Italic (*text* or _text_)
         result = result.replacingOccurrences(of: #"\*(.*?)\*"#, with: "$1", options: .regularExpression)
         result = result.replacingOccurrences(of: #"_(.*?)_"#, with: "$1", options: .regularExpression)
-        
+
         // Inline code (`code`)
         result = result.replacingOccurrences(of: #"`(.*?)`"#, with: "$1", options: .regularExpression)
-        
+
         // Links [text](url)
         result = result.replacingOccurrences(of: #"\[(.*?)\]\(.*?\)"#, with: "$1", options: .regularExpression)
-        
+
         return AttributedString(result)
     }
-    
+
     // MARK: - Utility Functions
-    
+
     private func headingFont(for level: Int) -> Font {
         switch level {
-        case 1: return .largeTitle
-        case 2: return .title
-        case 3: return .title2
-        case 4: return .title3
-        case 5: return .headline
-        default: return .subheadline
+        case 1: .largeTitle
+        case 2: .title
+        case 3: .title2
+        case 4: .title3
+        case 5: .headline
+        default: .subheadline
         }
     }
-    
+
     private func headingSpacing(for level: Int) -> CGFloat {
         switch level {
-        case 1: return 20
-        case 2: return 16
-        case 3: return 12
-        case 4: return 10
-        case 5: return 8
-        default: return 6
+        case 1: 20
+        case 2: 16
+        case 3: 12
+        case 4: 10
+        case 5: 8
+        default: 6
         }
     }
 }
@@ -256,7 +259,7 @@ struct MarkdownElement {
     let content: String
     let items: [String]
     let tableData: TableData?
-    
+
     enum ElementType {
         case heading(Int)
         case paragraph
@@ -266,7 +269,7 @@ struct MarkdownElement {
         case horizontalRule
         case table
     }
-    
+
     init(type: ElementType, content: String = "", items: [String] = [], tableData: TableData? = nil) {
         self.type = type
         self.content = content
@@ -286,7 +289,7 @@ func parseMarkdown(_ markdown: String) -> [MarkdownElement] {
     var elements: [MarkdownElement] = []
     var currentParagraph: [String] = []
     var i = 0
-    
+
     func flushParagraph() {
         if !currentParagraph.isEmpty {
             let content = currentParagraph.joined(separator: " ").trimmingCharacters(in: .whitespaces)
@@ -296,16 +299,16 @@ func parseMarkdown(_ markdown: String) -> [MarkdownElement] {
             currentParagraph.removeAll()
         }
     }
-    
+
     while i < lines.count {
         let line = lines[i].trimmingCharacters(in: .whitespaces)
-        
+
         if line.isEmpty {
             flushParagraph()
             i += 1
             continue
         }
-        
+
         // Headings
         if line.hasPrefix("#") {
             flushParagraph()
@@ -319,12 +322,12 @@ func parseMarkdown(_ markdown: String) -> [MarkdownElement] {
             let language = String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces)
             var codeLines: [String] = []
             i += 1
-            
-            while i < lines.count && !lines[i].trimmingCharacters(in: .whitespaces).hasPrefix("```") {
+
+            while i < lines.count, !lines[i].trimmingCharacters(in: .whitespaces).hasPrefix("```") {
                 codeLines.append(lines[i])
                 i += 1
             }
-            
+
             let code = codeLines.joined(separator: "\n")
             elements.append(MarkdownElement(type: .codeBlock(language.isEmpty ? nil : language), content: code))
         }
@@ -343,7 +346,7 @@ func parseMarkdown(_ markdown: String) -> [MarkdownElement] {
         else if line.hasPrefix("- ") || line.hasPrefix("* ") || line.hasPrefix("+ ") {
             flushParagraph()
             var listItems: [String] = []
-            
+
             while i < lines.count {
                 let listLine = lines[i].trimmingCharacters(in: .whitespaces)
                 if listLine.hasPrefix("- ") || listLine.hasPrefix("* ") || listLine.hasPrefix("+ ") {
@@ -356,7 +359,7 @@ func parseMarkdown(_ markdown: String) -> [MarkdownElement] {
                     break
                 }
             }
-            
+
             elements.append(MarkdownElement(type: .list(false), items: listItems))
             i -= 1 // Adjust since the loop will increment
         }
@@ -364,7 +367,7 @@ func parseMarkdown(_ markdown: String) -> [MarkdownElement] {
         else if line.range(of: #"^\d+\. "#, options: .regularExpression) != nil {
             flushParagraph()
             var listItems: [String] = []
-            
+
             while i < lines.count {
                 let listLine = lines[i].trimmingCharacters(in: .whitespaces)
                 if listLine.range(of: #"^\d+\. "#, options: .regularExpression) != nil {
@@ -377,7 +380,7 @@ func parseMarkdown(_ markdown: String) -> [MarkdownElement] {
                     break
                 }
             }
-            
+
             elements.append(MarkdownElement(type: .list(true), items: listItems))
             i -= 1 // Adjust since the loop will increment
         }
@@ -385,10 +388,10 @@ func parseMarkdown(_ markdown: String) -> [MarkdownElement] {
         else {
             currentParagraph.append(line)
         }
-        
+
         i += 1
     }
-    
+
     flushParagraph()
     return elements
 }
