@@ -465,4 +465,4 @@ If Demark doesn't fit your needs, consider these alternatives:
 
 ---
 
-**Made with ❤️ for the Swift community**
+License: MIT • Peter Steinberger ([steipete](https://twitter.com/steipete))
