@@ -1,4 +1,4 @@
-# Demark: Mark My Words, HTML to Markdown!
+# Demark 🧽 - Mark My Words, HTML to Markdown!
 
 ![DEMARK - HTML in → Markdown out ⚡](assets/banner.png)
 
