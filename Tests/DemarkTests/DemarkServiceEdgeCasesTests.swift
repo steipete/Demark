@@ -62,4 +62,3 @@ struct DemarkServiceEdgeCasesTests {
         #expect(!markdown.contains("body { color: red; }"))
     }
 }
-

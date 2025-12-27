@@ -48,4 +48,3 @@ struct DemarkServiceBasicsTests {
         #expect(markdown.contains("Visit"))
     }
 }
-

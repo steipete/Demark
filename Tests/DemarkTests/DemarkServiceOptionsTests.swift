@@ -8,15 +8,24 @@ struct DemarkServiceOptionsTests {
         let service = Demark()
         let html = "<ul><li>Item 1</li><li>Item 2</li></ul>"
 
-        let dash = try await service.convertToMarkdown(html, options: DemarkOptions(engine: .htmlToMd, bulletListMarker: "-"))
+        let dash = try await service.convertToMarkdown(
+            html,
+            options: DemarkOptions(engine: .htmlToMd, bulletListMarker: "-")
+        )
         #expect(dash.contains("- Item 1"))
         #expect(dash.contains("- Item 2"))
 
-        let plus = try await service.convertToMarkdown(html, options: DemarkOptions(engine: .htmlToMd, bulletListMarker: "+"))
+        let plus = try await service.convertToMarkdown(
+            html,
+            options: DemarkOptions(engine: .htmlToMd, bulletListMarker: "+")
+        )
         #expect(plus.contains("+ Item 1"))
         #expect(plus.contains("+ Item 2"))
 
-        let star = try await service.convertToMarkdown(html, options: DemarkOptions(engine: .htmlToMd, bulletListMarker: "*"))
+        let star = try await service.convertToMarkdown(
+            html,
+            options: DemarkOptions(engine: .htmlToMd, bulletListMarker: "*")
+        )
         #expect(star.contains("* Item 1"))
         #expect(star.contains("* Item 2"))
     }
@@ -45,4 +54,3 @@ struct DemarkServiceOptionsTests {
         #expect(markdown.contains("Test Heading"))
     }
 }
-
