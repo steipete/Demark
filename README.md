@@ -133,7 +133,7 @@ The example app provides a dual-pane interface where you can input HTML on the l
 ## Requirements
 
 - **Swift 6.0+**
-- **iOS 17.0+** / **macOS 14.0+** / **watchOS 10.0+** / **tvOS 17.0+** / **visionOS 1.0+**
+- **iOS 16.0+** / **macOS 14.0+** / **watchOS 10.0+** / **tvOS 17.0+** / **visionOS 1.0+**
 - **WebKit framework**
 
 ## Installation

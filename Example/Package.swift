@@ -7,7 +7,7 @@ let package = Package(
     name: "DemarkExample",
     platforms: [
         .macOS(.v14),
-        .iOS(.v17),
+        .iOS(.v16),
     ],
     products: [
         .executable(

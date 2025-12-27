@@ -55,16 +55,51 @@ final class ConversionRuntime: Sendable {
     /// Normalize list markers to match expectations in tests (single space after marker)
     /// without disturbing code blocks or other content.
     private func normalizeMarkdown(_ markdown: String, bulletMarker: String) -> String {
-        // Escape marker for regex usage
-        let escaped = NSRegularExpression.escapedPattern(for: bulletMarker)
-        let pattern = "^(\\s*\(escaped))\\s{2,}(\\S)" // marker + multiple spaces + content
-
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines]) else {
+        guard bulletMarker.count == 1, let bulletMarker = bulletMarker.first, "-+*".contains(bulletMarker) else {
             return markdown
         }
 
-        let range = NSRange(markdown.startIndex ..< markdown.endIndex, in: markdown)
-        return regex.stringByReplacingMatches(in: markdown, options: [], range: range, withTemplate: "$1 $2")
+        // Normalize unordered list markers (html-to-md currently always uses '*') and spacing,
+        // while avoiding fenced code blocks and thematic breaks.
+        guard let listItemRegex = try? NSRegularExpression(pattern: "^( {0,3})[*+\\-]\\s+(\\S)") else {
+            return markdown
+        }
+
+        var inFencedCodeBlock = false
+        let lines = markdown.split(separator: "\n", omittingEmptySubsequences: false)
+        let normalized = lines.map { line -> String in
+            let rawLine = String(line)
+
+            let trimmedLeft = rawLine.drop(while: { $0 == " " || $0 == "\t" })
+            if trimmedLeft.hasPrefix("```") || trimmedLeft.hasPrefix("~~~") {
+                inFencedCodeBlock.toggle()
+                return rawLine
+            }
+
+            guard !inFencedCodeBlock else {
+                return rawLine
+            }
+
+            let trimmed = rawLine.trimmingCharacters(in: .whitespaces)
+            let compact = trimmed.filter { $0 != " " && $0 != "\t" }
+            if compact.count >= 3,
+               let first = compact.first,
+               "-*_".contains(first),
+               compact.allSatisfy({ $0 == first })
+            {
+                return rawLine
+            }
+
+            let range = NSRange(rawLine.startIndex ..< rawLine.endIndex, in: rawLine)
+            return listItemRegex.stringByReplacingMatches(
+                in: rawLine,
+                options: [],
+                range: range,
+                withTemplate: "$1\(bulletMarker) $2"
+            )
+        }
+
+        return normalized.joined(separator: "\n")
     }
 }
 
@@ -89,7 +124,7 @@ final class ConversionRuntime: Sendable {
 ///
 /// Demark works on all Apple platforms with WebKit support:
 /// - **macOS 14.0+**: Full functionality with desktop optimizations
-/// - **iOS 17.0+**: Full functionality with mobile optimizations
+/// - **iOS 16.0+**: Full functionality with mobile optimizations
 /// - **watchOS 10.0+**: Core functionality with minimal WebView
 /// - **tvOS 17.0+**: Core functionality with TV-optimized WebView
 /// - **visionOS 1.0+**: Full functionality with spatial computing optimizations

@@ -95,6 +95,6 @@ var html: String {
 
 ## Requirements
 
-- iOS 17.0+ / macOS 14.0+
-- Xcode 15.0+
-- Swift 5.9+
+- iOS 16.0+ / macOS 14.0+
+- Xcode 16.0+
+- Swift 6.0+

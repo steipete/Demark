@@ -40,9 +40,6 @@ final class DemarkTests: XCTestCase {
         let htmlToMdResult = try await demark.convertToMarkdown(html, options: htmlToMdOptions)
 
         // Both should produce similar markdown
-        print("Turndown result:\n\(turndownResult)")
-        print("html-to-md result:\n\(htmlToMdResult)")
-
         XCTAssertTrue(turndownResult.contains("## Subheading"))
         XCTAssertTrue(htmlToMdResult.contains("## Subheading"))
         XCTAssertTrue(turndownResult.contains("Item 1"))

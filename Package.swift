@@ -7,7 +7,7 @@ let package = Package(
     name: "Demark",
     platforms: [
         .macOS(.v14),
-        .iOS(.v17),
+        .iOS(.v16),
         .watchOS(.v10),
         .tvOS(.v17),
         .visionOS(.v1),
