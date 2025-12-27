@@ -20,4 +20,4 @@ Demark uses SemVer tags (`1.0.1`) and GitHub Releases.
 
 ## Notes
 
-- CI currently runs on branch pushes/PRs (see `.github/workflows/ci.yml`), not on tags.
+- CI runs on branch pushes/PRs and tags (see `.github/workflows/ci.yml`).
