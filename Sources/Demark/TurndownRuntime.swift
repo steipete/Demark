@@ -1,3 +1,10 @@
+//
+// TurndownRuntime.swift
+// Demark
+//
+// Created by Peter Steinberger on 12/28/2025.
+//
+
 import Foundation
 import os.log
 import WebKit
@@ -61,7 +68,6 @@ final class TurndownRuntime {
 
             logger.debug("Conversion successful, returning result")
             return markdown
-
         } catch {
             logger.error("JavaScript exception during conversion: \(error)")
             throw DemarkError.jsException(error.localizedDescription)
@@ -165,21 +171,16 @@ final class TurndownRuntime {
                 } else {
                     throw new Error('TurndownService is not available');
                 }
-
                 // Create TurndownService with options
                 var turndownService = new TurndownConstructor(\(optionsJSON));
-
                 // Configure service
                 turndownService.keep(['del', 'ins', 'sup', 'sub']);
                 turndownService.remove(['script', 'style']);
-
                 // Apply custom skip/ignore rules
                 \(skipTagsJS)
                 \(ignoreTagsJS)
-
                 // Convert HTML to Markdown
                 var markdown = turndownService.turndown("\(escapedHTML)");
-
                 // Return result
                 return markdown;
             } catch (error) {
@@ -282,7 +283,6 @@ final class TurndownRuntime {
 
             isInitialized = true
             logger.info("WKWebView runtime ready with Turndown 🎉")
-
         } catch let error as DemarkError {
             throw error
         } catch {

@@ -1,9 +1,16 @@
+//
+// Demark.swift
+// Demark
+//
+// Created by Peter Steinberger on 12/28/2025.
+//
+
 import Foundation
 import os.log
 
 /// Main conversion runtime that routes between different engines
 @MainActor
-final class ConversionRuntime: Sendable {
+final class ConversionRuntime {
     // MARK: - Properties
 
     private let logger = Logger(subsystem: "com.demark", category: "conversion")
@@ -14,10 +21,10 @@ final class ConversionRuntime: Sendable {
 
     /// Convert HTML to Markdown with optional configuration
     func htmlToMarkdown(_ html: String, options: DemarkOptions = .default) async throws -> String {
-        logger
-            .info(
-                "Starting HTML to Markdown conversion with \(options.engine.rawValue) engine (input length: \(html.count))"
-            )
+        logger.info(
+            "Starting HTML to Markdown conversion with \(options.engine.rawValue) engine"
+        )
+        logger.info("Input length: \(html.count)")
 
         // Reject empty input early to keep error semantics consistent across engines.
         if html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -129,13 +136,14 @@ final class ConversionRuntime: Sendable {
 /// - **tvOS 17.0+**: Core functionality with TV-optimized WebView
 /// - **visionOS 1.0+**: Full functionality with spatial computing optimizations
 @MainActor
-public final class Demark: Sendable {
+public final class Demark {
     // MARK: - Properties
 
     private let conversionRuntime: ConversionRuntime
 
     // MARK: - Lifecycle
 
+    /// Create a new Demark converter instance.
     public init() {
         conversionRuntime = ConversionRuntime()
     }

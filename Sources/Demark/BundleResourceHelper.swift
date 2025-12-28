@@ -1,3 +1,10 @@
+//
+// BundleResourceHelper.swift
+// Demark
+//
+// Created by Peter Steinberger on 12/28/2025.
+//
+
 import Foundation
 
 /// Helper for locating JavaScript resources in various bundle configurations

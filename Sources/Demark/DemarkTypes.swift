@@ -1,12 +1,21 @@
+//
+// DemarkTypes.swift
+// Demark
+//
+// Created by Peter Steinberger on 12/28/2025.
+//
+
 import Foundation
 
 // MARK: - Supporting Types
 
+/// Heading conversion style for Markdown output.
 public enum DemarkHeadingStyle: String, Sendable {
     case setext
     case atx
 }
 
+/// Code block formatting style for Markdown output.
 public enum DemarkCodeBlockStyle: String, Sendable {
     case indented
     case fenced
@@ -145,6 +154,7 @@ public struct DemarkOptions: Sendable {
     /// **Default:** `[]`
     public var emptyTags: [String] = []
 
+    /// Create a new options value with custom configuration.
     public init(
         engine: ConversionEngine = .turndown,
         headingStyle: DemarkHeadingStyle = .atx,
@@ -166,6 +176,7 @@ public struct DemarkOptions: Sendable {
 
 // MARK: - Error Types
 
+/// Errors that can occur during HTML to Markdown conversion.
 public enum DemarkError: LocalizedError, Sendable {
     case jsEnvironmentInitializationFailed
     case libraryNotFound(String)
@@ -181,6 +192,7 @@ public enum DemarkError: LocalizedError, Sendable {
 
     // MARK: Public
 
+    /// Human-readable description of the error.
     public var errorDescription: String? {
         switch self {
         case .jsEnvironmentInitializationFailed:

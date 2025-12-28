@@ -1,3 +1,10 @@
+//
+// MarkdownRenderer.swift
+// Demark
+//
+// Created by Peter Steinberger on 12/28/2025.
+//
+
 import SwiftUI
 
 // MARK: - Cross-platform Color Extension
@@ -285,113 +292,128 @@ struct TableData {
 
 // Simple markdown parser for demonstration
 func parseMarkdown(_ markdown: String) -> [MarkdownElement] {
-    let lines = markdown.components(separatedBy: .newlines)
+    var parser = MarkdownParser(lines: markdown.components(separatedBy: .newlines))
+    return parser.parse()
+}
+
+private struct MarkdownParser {
+    let lines: [String]
     var elements: [MarkdownElement] = []
     var currentParagraph: [String] = []
-    var i = 0
+    var index = 0
 
-    func flushParagraph() {
-        if !currentParagraph.isEmpty {
-            let content = currentParagraph.joined(separator: " ").trimmingCharacters(in: .whitespaces)
-            if !content.isEmpty {
-                elements.append(MarkdownElement(type: .paragraph, content: content))
-            }
-            currentParagraph.removeAll()
-        }
-    }
+    mutating func parse() -> [MarkdownElement] {
+        while index < lines.count {
+            let line = lines[index].trimmingCharacters(in: .whitespaces)
 
-    while i < lines.count {
-        let line = lines[i].trimmingCharacters(in: .whitespaces)
-
-        if line.isEmpty {
-            flushParagraph()
-            i += 1
-            continue
-        }
-
-        // Headings
-        if line.hasPrefix("#") {
-            flushParagraph()
-            let level = line.prefix(while: { $0 == "#" }).count
-            let content = String(line.dropFirst(level)).trimmingCharacters(in: .whitespaces)
-            elements.append(MarkdownElement(type: .heading(level), content: content))
-        }
-        // Code blocks
-        else if line.hasPrefix("```") {
-            flushParagraph()
-            let language = String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces)
-            var codeLines: [String] = []
-            i += 1
-
-            while i < lines.count, !lines[i].trimmingCharacters(in: .whitespaces).hasPrefix("```") {
-                codeLines.append(lines[i])
-                i += 1
+            if line.isEmpty {
+                flushParagraph()
+                index += 1
+                continue
             }
 
-            let code = codeLines.joined(separator: "\n")
-            elements.append(MarkdownElement(type: .codeBlock(language.isEmpty ? nil : language), content: code))
-        }
-        // Blockquotes
-        else if line.hasPrefix(">") {
-            flushParagraph()
-            let content = String(line.dropFirst(1)).trimmingCharacters(in: .whitespaces)
-            elements.append(MarkdownElement(type: .blockquote, content: content))
-        }
-        // Horizontal rules
-        else if line.hasPrefix("---") || line.hasPrefix("***") {
-            flushParagraph()
-            elements.append(MarkdownElement(type: .horizontalRule))
-        }
-        // Lists
-        else if line.hasPrefix("- ") || line.hasPrefix("* ") || line.hasPrefix("+ ") {
-            flushParagraph()
-            var listItems: [String] = []
-
-            while i < lines.count {
-                let listLine = lines[i].trimmingCharacters(in: .whitespaces)
-                if listLine.hasPrefix("- ") || listLine.hasPrefix("* ") || listLine.hasPrefix("+ ") {
-                    let item = String(listLine.dropFirst(2)).trimmingCharacters(in: .whitespaces)
-                    listItems.append(item)
-                    i += 1
-                } else if listLine.isEmpty {
-                    break
-                } else {
-                    break
-                }
+            let handled = handleHeading(line)
+                || handleCodeBlock(line)
+                || handleBlockquote(line)
+                || handleHorizontalRule(line)
+                || handleUnorderedList(line)
+                || handleOrderedList(line)
+            if handled {
+                index += 1
+                continue
             }
 
-            elements.append(MarkdownElement(type: .list(false), items: listItems))
-            i -= 1 // Adjust since the loop will increment
-        }
-        // Ordered lists
-        else if line.range(of: #"^\d+\. "#, options: .regularExpression) != nil {
-            flushParagraph()
-            var listItems: [String] = []
-
-            while i < lines.count {
-                let listLine = lines[i].trimmingCharacters(in: .whitespaces)
-                if listLine.range(of: #"^\d+\. "#, options: .regularExpression) != nil {
-                    let item = listLine.replacingOccurrences(of: #"^\d+\. "#, with: "", options: .regularExpression)
-                    listItems.append(item)
-                    i += 1
-                } else if listLine.isEmpty {
-                    break
-                } else {
-                    break
-                }
-            }
-
-            elements.append(MarkdownElement(type: .list(true), items: listItems))
-            i -= 1 // Adjust since the loop will increment
-        }
-        // Regular paragraph
-        else {
             currentParagraph.append(line)
+            index += 1
         }
 
-        i += 1
+        flushParagraph()
+        return elements
     }
 
-    flushParagraph()
-    return elements
+    private mutating func flushParagraph() {
+        guard !currentParagraph.isEmpty else { return }
+        let content = currentParagraph.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+        if !content.isEmpty {
+            elements.append(MarkdownElement(type: .paragraph, content: content))
+        }
+        currentParagraph.removeAll()
+    }
+
+    private mutating func handleHeading(_ line: String) -> Bool {
+        guard line.hasPrefix("#") else { return false }
+        flushParagraph()
+        let level = line.prefix(while: { $0 == "#" }).count
+        let content = String(line.dropFirst(level)).trimmingCharacters(in: .whitespaces)
+        elements.append(MarkdownElement(type: .heading(level), content: content))
+        return true
+    }
+
+    private mutating func handleCodeBlock(_ line: String) -> Bool {
+        guard line.hasPrefix("```") else { return false }
+        flushParagraph()
+        let language = String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+        var codeLines: [String] = []
+        index += 1
+        while index < lines.count, !lines[index].trimmingCharacters(in: .whitespaces).hasPrefix("```") {
+            codeLines.append(lines[index])
+            index += 1
+        }
+        let code = codeLines.joined(separator: "\n")
+        elements.append(MarkdownElement(type: .codeBlock(language.isEmpty ? nil : language), content: code))
+        return true
+    }
+
+    private mutating func handleBlockquote(_ line: String) -> Bool {
+        guard line.hasPrefix(">") else { return false }
+        flushParagraph()
+        let content = String(line.dropFirst(1)).trimmingCharacters(in: .whitespaces)
+        elements.append(MarkdownElement(type: .blockquote, content: content))
+        return true
+    }
+
+    private mutating func handleHorizontalRule(_ line: String) -> Bool {
+        guard line.hasPrefix("---") || line.hasPrefix("***") else { return false }
+        flushParagraph()
+        elements.append(MarkdownElement(type: .horizontalRule))
+        return true
+    }
+
+    private mutating func handleUnorderedList(_ line: String) -> Bool {
+        guard line.hasPrefix("- ") || line.hasPrefix("* ") || line.hasPrefix("+ ") else { return false }
+        flushParagraph()
+        var listItems: [String] = []
+        while index < lines.count {
+            let listLine = lines[index].trimmingCharacters(in: .whitespaces)
+            if listLine.hasPrefix("- ") || listLine.hasPrefix("* ") || listLine.hasPrefix("+ ") {
+                let item = String(listLine.dropFirst(2)).trimmingCharacters(in: .whitespaces)
+                listItems.append(item)
+                index += 1
+            } else {
+                break
+            }
+        }
+        elements.append(MarkdownElement(type: .list(false), items: listItems))
+        index -= 1
+        return true
+    }
+
+    private mutating func handleOrderedList(_ line: String) -> Bool {
+        guard line.range(of: #"^\d+\. "#, options: .regularExpression) != nil else { return false }
+        flushParagraph()
+        var listItems: [String] = []
+        while index < lines.count {
+            let listLine = lines[index].trimmingCharacters(in: .whitespaces)
+            if listLine.range(of: #"^\d+\. "#, options: .regularExpression) != nil {
+                let item = listLine.replacingOccurrences(of: #"^\d+\. "#, with: "", options: .regularExpression)
+                listItems.append(item)
+                index += 1
+            } else {
+                break
+            }
+        }
+        elements.append(MarkdownElement(type: .list(true), items: listItems))
+        index -= 1
+        return true
+    }
 }

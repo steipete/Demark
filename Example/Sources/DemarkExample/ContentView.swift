@@ -1,3 +1,10 @@
+//
+// ContentView.swift
+// Demark
+//
+// Created by Peter Steinberger on 12/28/2025.
+//
+
 import Demark
 import SwiftUI
 #if os(iOS)
@@ -218,17 +225,20 @@ struct ContentView: View {
     var outputTabs: some View {
         HStack(spacing: 0) {
             ForEach(OutputTab.allCases, id: \.self) { tab in
-                Button(action: { selectedTab = tab }) {
-                    HStack {
-                        Image(systemName: tab.icon)
-                        Text(tab.rawValue)
+                Button(
+                    action: { selectedTab = tab },
+                    label: {
+                        HStack {
+                            Image(systemName: tab.icon)
+                            Text(tab.rawValue)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(selectedTab == tab ? Color.accentColor : Color.clear)
+                        .foregroundColor(selectedTab == tab ? .white : .primary)
+                        .cornerRadius(6)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(selectedTab == tab ? Color.accentColor : Color.clear)
-                    .foregroundColor(selectedTab == tab ? .white : .primary)
-                    .cornerRadius(6)
-                }
+                )
                 .buttonStyle(.plain)
             }
 
@@ -406,19 +416,22 @@ enum SampleHTML: CaseIterable {
             """
             <article>
                 <h1>My Awesome Blog Post</h1>
-                <p>Welcome to my <strong>amazing</strong> blog! Today I want to share some insights about <em>web development</em>.</p>
-                
+                <p>
+                    Welcome to my <strong>amazing</strong> blog! Today I want to share some insights about
+                    <em>web development</em>.
+                </p>
+
                 <h2>Key Points</h2>
                 <ul>
                     <li>HTML is the backbone of the web</li>
                     <li>Markdown is great for writing</li>
                     <li>Conversion tools are <a href="https://example.com">super useful</a></li>
                 </ul>
-                
+
                 <blockquote>
                     <p>"The best way to learn is by doing." - Someone wise</p>
                 </blockquote>
-                
+
                 <h3>Code Example</h3>
                 <pre><code class="javascript">
             function greet(name) {
@@ -433,21 +446,21 @@ enum SampleHTML: CaseIterable {
             <div class="documentation">
                 <h1>API Documentation</h1>
                 <p>This is the documentation for our <code>amazing-library</code>.</p>
-                
+
                 <h2>Installation</h2>
                 <p>Install the library using your favorite package manager:</p>
                 <pre><code class="bash">npm install amazing-library</code></pre>
-                
+
                 <h2>Usage</h2>
                 <p>Here's how to use the library:</p>
-                
+
                 <ol>
                     <li>Import the library</li>
                     <li>Initialize the component</li>
                     <li>Configure your options</li>
                     <li>Call the main function</li>
                 </ol>
-                
+
                 <h3>Example</h3>
                 <pre><code class="javascript">
             import { AmazingComponent } from 'amazing-library';
@@ -459,7 +472,7 @@ enum SampleHTML: CaseIterable {
 
             component.run();
                 </code></pre>
-                
+
                 <h2>API Reference</h2>
                 <table>
                     <tr>
@@ -498,21 +511,27 @@ enum SampleHTML: CaseIterable {
                         </ul>
                     </nav>
                 </header>
-                
+
                 <main>
                     <section id="section1">
                         <h2>Introduction</h2>
-                        <p>This document contains <strong>various HTML elements</strong> to test the conversion capabilities.</p>
-                        
+                        <p>
+                            This document contains <strong>various HTML elements</strong> to test the conversion
+                            capabilities.
+                        </p>
+
                         <div class="highlight">
-                            <p>This is a highlighted section with <em>emphasized text</em> and <code>inline code</code>.</p>
+                            <p>
+                                This is a highlighted section with <em>emphasized text</em> and
+                                <code>inline code</code>.
+                            </p>
                         </div>
                     </section>
-                    
+
                     <section id="section2">
                         <h2>Lists and Links</h2>
                         <p>Here are some different list types:</p>
-                        
+
                         <h3>Unordered List</h3>
                         <ul>
                             <li>Item one</li>
@@ -524,7 +543,7 @@ enum SampleHTML: CaseIterable {
                                 </ul>
                             </li>
                         </ul>
-                        
+
                         <h3>Ordered List</h3>
                         <ol>
                             <li>First step</li>
@@ -532,14 +551,14 @@ enum SampleHTML: CaseIterable {
                             <li>Final step</li>
                         </ol>
                     </section>
-                    
+
                     <section id="section3">
                         <h2>Code and Quotes</h2>
                         <blockquote>
                             <p>This is a blockquote with <strong>bold text</strong> inside.</p>
                             <cite>— Famous Person</cite>
                         </blockquote>
-                        
+
                         <h3>Code Block</h3>
                         <pre><code class="python">
             def hello_world():
@@ -549,11 +568,11 @@ enum SampleHTML: CaseIterable {
             if __name__ == "__main__":
                 hello_world()
                         </code></pre>
-                        
+
                         <p>And here's some <code>inline code</code> in a paragraph.</p>
                     </section>
                 </main>
-                
+
                 <footer>
                     <hr>
                     <p><small>© 2024 Example Company. All rights reserved.</small></p>

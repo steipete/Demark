@@ -1,3 +1,10 @@
+//
+// HTMLToMdRuntime.swift
+// Demark
+//
+// Created by Peter Steinberger on 12/28/2025.
+//
+
 import Foundation
 import JavaScriptCore
 import os.log
@@ -23,10 +30,14 @@ final class HTMLToMdRuntime: @unchecked Sendable {
     /// Convert HTML to Markdown using html-to-md
     /// All operations happen on the dedicated queue to ensure thread safety
     func convert(_ html: String, options: DemarkOptions) async throws -> String {
-        // First ensure we're initialized
         if await !isInitializedAsync() {
             try await initialize()
         }
+
+        let optionsDict = buildOptionsDict(options)
+        let optionsJSON = try optionsJSON(from: optionsDict)
+        let escapedHTML = escapeHTMLForScript(html)
+        let script = buildConversionScript(escapedHTML: escapedHTML, optionsJSON: optionsJSON)
 
         return try await withCheckedThrowingContinuation { continuation in
             queue.async { [weak self] in
@@ -37,59 +48,10 @@ final class HTMLToMdRuntime: @unchecked Sendable {
                     return
                 }
 
-                // Build html-to-md options
-                var optionsDict: [String: Any] = [:]
-
-                // Map common options
-                if !options.skipTags.isEmpty {
-                    optionsDict["skipTags"] = options.skipTags
-                }
-                if !options.ignoreTags.isEmpty {
-                    optionsDict["ignoreTags"] = options.ignoreTags
-                }
-                if !options.emptyTags.isEmpty {
-                    optionsDict["emptyTags"] = options.emptyTags
-                }
-
-                // html-to-md doesn't have bulletListMarker, it uses bulletMarker
-                if options.bulletListMarker != "-" {
-                    optionsDict["bulletMarker"] = options.bulletListMarker
-                }
-
                 do {
-                    // Convert options to JSON
-                    let optionsData = try JSONSerialization.data(withJSONObject: optionsDict)
-                    guard let optionsJSON = String(data: optionsData, encoding: .utf8) else {
-                        throw DemarkError.invalidInput("Failed to serialize options")
-                    }
-
-                    // Escape HTML for JavaScript
-                    let escapedHTML = html
-                        .replacingOccurrences(of: "\\", with: "\\\\")
-                        .replacingOccurrences(of: "`", with: "\\`")
-                        .replacingOccurrences(of: "$", with: "\\$")
-
-                    // Call html-to-md (using html2md function name)
-                    let script = """
-                    (function() {
-                        try {
-                            return html2md(`\(escapedHTML)`, \(optionsJSON));
-                        } catch (error) {
-                            throw new Error('Conversion failed: ' + error.message);
-                        }
-                    })();
-                    """
-
-                    guard let result = context.evaluateScript(script),
-                          !result.isUndefined,
-                          let markdown = result.toString()
-                    else {
-                        throw DemarkError.conversionFailed
-                    }
-
+                    let markdown = try self.evaluate(script: script, in: context)
                     self.logger.info("html-to-md conversion completed")
                     continuation.resume(returning: markdown)
-
                 } catch {
                     self.logger.error("Conversion error: \(error)")
                     continuation.resume(throwing: error)
@@ -151,7 +113,6 @@ final class HTMLToMdRuntime: @unchecked Sendable {
                     self.isInitialized = true
                     self.logger.info("JSCore runtime initialized with html-to-md")
                     continuation.resume()
-
                 } catch {
                     continuation.resume(throwing: error)
                 }
@@ -166,5 +127,59 @@ final class HTMLToMdRuntime: @unchecked Sendable {
                 continuation.resume(returning: self?.isInitialized ?? false)
             }
         }
+    }
+
+    private func buildOptionsDict(_ options: DemarkOptions) -> [String: Any] {
+        var optionsDict: [String: Any] = [:]
+        if !options.skipTags.isEmpty {
+            optionsDict["skipTags"] = options.skipTags
+        }
+        if !options.ignoreTags.isEmpty {
+            optionsDict["ignoreTags"] = options.ignoreTags
+        }
+        if !options.emptyTags.isEmpty {
+            optionsDict["emptyTags"] = options.emptyTags
+        }
+        if options.bulletListMarker != "-" {
+            optionsDict["bulletMarker"] = options.bulletListMarker
+        }
+        return optionsDict
+    }
+
+    private func optionsJSON(from optionsDict: [String: Any]) throws -> String {
+        let optionsData = try JSONSerialization.data(withJSONObject: optionsDict)
+        guard let optionsJSON = String(data: optionsData, encoding: .utf8) else {
+            throw DemarkError.invalidInput("Failed to serialize options")
+        }
+        return optionsJSON
+    }
+
+    private func escapeHTMLForScript(_ html: String) -> String {
+        html
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "`", with: "\\`")
+            .replacingOccurrences(of: "$", with: "\\$")
+    }
+
+    private func buildConversionScript(escapedHTML: String, optionsJSON: String) -> String {
+        """
+        (function() {
+            try {
+                return html2md(`\(escapedHTML)`, \(optionsJSON));
+            } catch (error) {
+                throw new Error('Conversion failed: ' + error.message);
+            }
+        })();
+        """
+    }
+
+    private func evaluate(script: String, in context: JSContext) throws -> String {
+        guard let result = context.evaluateScript(script),
+              !result.isUndefined,
+              let markdown = result.toString()
+        else {
+            throw DemarkError.conversionFailed
+        }
+        return markdown
     }
 }
