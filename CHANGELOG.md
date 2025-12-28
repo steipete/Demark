@@ -1,18 +1,18 @@
 # Changelog
 
+## [1.1.0] - 2025-12-28
+
+### Changed
+- Example app targets iOS 16 and avoids iOS 17-only SwiftUI APIs.
+- Documentation updated for iOS 16 requirements.
+- SwiftLint/SwiftFormat rules aligned and remaining tests moved to Swift Testing.
+
 ## [1.0.1] - 2025-12-27
 
 ### Changed
 - Minimum iOS deployment target is now iOS 16.
 - Updated Turndown.js to 7.2.2.
 - Unordered list markers are normalized to match `bulletListMarker` for both engines.
-
-## [1.0.1] - Unreleased
-
-### Changed
-- **iOS Deployment Target**: Lowered minimum iOS version to 16.0 across package and example app
-- **Example App**: Updated iOS deployment target and SwiftUI change handlers for iOS 16 compatibility
-- **Docs**: Updated platform requirements to reflect iOS 16 support
 
 ## [1.0.0] - 2024-05-30
 
@@ -23,7 +23,7 @@ The first stable release of **Demark** - a modern Swift package for converting H
 ### Added
 
 #### Core Library
-- **Cross-Platform Support**: Full compatibility with iOS 16.0+, macOS 14.0+, watchOS 10.0+, tvOS 17.0+, and visionOS 1.0+
+- **Cross-Platform Support**: Full compatibility with iOS 17.0+, macOS 14.0+, watchOS 10.0+, tvOS 17.0+, and visionOS 1.0+
 - **Swift 6 Ready**: Complete Swift 6 support with strict concurrency checking enabled
 - **WKWebView Integration**: Real browser DOM environment for accurate HTML parsing using WebKit framework
 - **Turndown.js Powered**: Industry-standard HTML to Markdown conversion engine (v7.1.1)
