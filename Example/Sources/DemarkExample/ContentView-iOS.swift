@@ -45,7 +45,7 @@ import SwiftUI
                                         Text("html-to-md").tag(ConversionEngine.htmlToMd)
                                     }
                                     .pickerStyle(.segmented)
-                                    .onChange(of: selectedEngine) { _, newValue in
+                                    .onChange(of: selectedEngine) { newValue in
                                         options.engine = newValue
                                     }
                                 }

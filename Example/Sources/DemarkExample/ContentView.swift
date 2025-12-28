@@ -106,7 +106,7 @@ struct ContentView: View {
                     }
                     .pickerStyle(.segmented)
                     .frame(maxWidth: 300)
-                    .onChange(of: selectedEngine) { _, newValue in
+                    .onChange(of: selectedEngine) { newValue in
                         options.engine = newValue
                     }
 
