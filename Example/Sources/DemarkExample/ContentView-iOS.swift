@@ -10,28 +10,90 @@ import SwiftUI
 
 #if os(iOS)
     extension ContentView {
+        private var hasValidInputForIOS: Bool {
+            switch inputMode {
+            case .html:
+                return !htmlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            case .url:
+                let trimmed = urlInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                return !trimmed.isEmpty
+            }
+        }
+
+        private var iOSContentSelectorBinding: Binding<String> {
+            Binding(
+                get: { urlLoadingOptions.contentSelector ?? "" },
+                set: { urlLoadingOptions.contentSelector = $0.isEmpty ? nil : $0 }
+            )
+        }
+
         var iOSLayout: some View {
             NavigationStack {
                 ScrollView {
                     VStack(spacing: 20) {
-                        // HTML Input Section
+                        // Input Mode Picker
+                        Picker("Input Mode", selection: $inputMode) {
+                            ForEach(InputMode.allCases, id: \.self) { mode in
+                                Label(mode.rawValue, systemImage: mode.icon).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal)
+
+                        // Input Section
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
-                                Label("HTML Input", systemImage: "chevron.left.forwardslash.chevron.right")
-                                    .font(.headline)
+                                Label(
+                                    inputMode == .html ? "HTML Input" : "URL Input",
+                                    systemImage: inputMode.icon
+                                )
+                                .font(.headline)
 
                                 Spacer()
 
-                                sampleHTMLMenu
+                                if inputMode == .html {
+                                    sampleHTMLMenu
+                                }
                             }
 
-                            TextEditor(text: $htmlInput)
-                                .font(.system(.body, design: .monospaced))
-                                .frame(minHeight: 200)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                                )
+                            if inputMode == .html {
+                                TextEditor(text: $htmlInput)
+                                    .font(.system(.body, design: .monospaced))
+                                    .frame(minHeight: 200)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                                    )
+                            } else {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("URL")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+
+                                        TextField("https://example.com", text: $urlInput)
+                                            .font(.system(.body, design: .monospaced))
+                                            .textFieldStyle(.roundedBorder)
+                                            .autocapitalization(.none)
+                                            .keyboardType(.URL)
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Content Selector (optional)")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+
+                                        TextField("e.g., article, main", text: iOSContentSelectorBinding)
+                                            .font(.system(.body, design: .monospaced))
+                                            .textFieldStyle(.roundedBorder)
+                                            .autocapitalization(.none)
+
+                                        Text("CSS selector to extract specific content")
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
                         }
                         .padding()
                         .background(Color(.secondarySystemBackground))
@@ -108,18 +170,18 @@ import SwiftUI
                         .cornerRadius(12)
 
                         // Convert Button
-                        Button(action: convertHTML) {
+                        Button(action: performConversion) {
                             HStack {
                                 Image(systemName: "arrow.right.circle.fill")
                                 Text("Convert to Markdown")
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(isConverting || htmlInput.isEmpty ? Color.gray : Color.accentColor)
+                            .background(isConverting || !hasValidInputForIOS ? Color.gray : Color.accentColor)
                             .foregroundColor(.white)
                             .cornerRadius(12)
                         }
-                        .disabled(isConverting || htmlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(isConverting || !hasValidInputForIOS)
 
                         // Output Section
                         if !markdownOutput.isEmpty || conversionError != nil {
@@ -168,3 +230,4 @@ import SwiftUI
         }
     }
 #endif
+
