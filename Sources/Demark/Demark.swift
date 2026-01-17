@@ -16,14 +16,7 @@ final class ConversionRuntime {
     private let logger = Logger(subsystem: "com.demark", category: "conversion")
     private let turndownRuntime = TurndownRuntime()
     private let htmlToMdRuntime = HTMLToMdRuntime()
-    private var _urlLoadingRuntime: URLLoadingRuntime?
-
-    private var urlLoadingRuntime: URLLoadingRuntime {
-        if _urlLoadingRuntime == nil {
-            _urlLoadingRuntime = URLLoadingRuntime()
-        }
-        return _urlLoadingRuntime!
-    }
+    private lazy var urlLoadingRuntime = URLLoadingRuntime()
 
     // MARK: - Public Methods
 
