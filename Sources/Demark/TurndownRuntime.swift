@@ -89,11 +89,23 @@ final class TurndownRuntime {
 
         guard try await turndownIsAvailable(in: webView) else {
             logger.warning("TurndownService missing, reinitializing WKWebView...")
+
+            // Clean up old WebView before creating new one
+            self.webView = nil
             isInitialized = false
+
             try await initializeJavaScriptEnvironment()
+
             guard let refreshedWebView = self.webView else {
                 throw DemarkError.jsEnvironmentInitializationFailed
             }
+
+            // Verify TurndownService is available after reinit
+            guard try await turndownIsAvailable(in: refreshedWebView) else {
+                logger.error("TurndownService still not available after reinitialization")
+                throw DemarkError.jsEnvironmentInitializationFailed
+            }
+
             return refreshedWebView
         }
 
@@ -249,8 +261,8 @@ final class TurndownRuntime {
             // Load a blank page first
             webView.loadHTMLString("<html><head></head><body></body></html>", baseURL: nil)
 
-            // Wait for page to load
-            try await Task.sleep(nanoseconds: 100_000_000) // 100ms
+            // Wait for page to actually be ready (poll document.readyState)
+            try await waitForDocumentReady(webView: webView)
 
             // Load Turndown library
             logger.info("Loading Turndown from: \(turndownPath)")
@@ -261,33 +273,45 @@ final class TurndownRuntime {
             _ = try await webView.evaluateJavaScript(turndownScript)
             logger.info("Successfully loaded Turndown JavaScript library")
 
-            // Wait a bit for the script to fully initialize
-            try await Task.sleep(nanoseconds: 50_000_000) // 50ms
-
-            // Check what's available in the global scope
-            let globalCheck = try await webView.evaluateJavaScript("""
-                JSON.stringify({
-                    hasTurndownService: typeof TurndownService !== 'undefined',
-                    hasTurndown: typeof Turndown !== 'undefined',
-                    hasWindowTurndownService: typeof window.TurndownService !== 'undefined',
-                    hasWindowTurndown: typeof window.Turndown !== 'undefined'
-                })
-            """)
-
-            if let checkResult = globalCheck as? String {
-                logger.info("Global scope check: \(checkResult)")
+            // Verify TurndownService is actually available
+            guard try await turndownIsAvailable(in: webView) else {
+                logger.error("TurndownService not available after loading script")
+                throw DemarkError.libraryLoadingFailed("TurndownService not available in global scope")
             }
 
-            // Since TurndownService is available, we don't need to do anything else
-            // The global scope check confirmed it's there
-
             isInitialized = true
-            logger.info("WKWebView runtime ready with Turndown 🎉")
+            logger.info("WKWebView runtime ready with Turndown")
         } catch let error as DemarkError {
             throw error
         } catch {
             logger.error("Failed to load JavaScript libraries: \(error)")
             throw DemarkError.libraryLoadingFailed(error.localizedDescription)
         }
+    }
+
+    /// Wait for document to be ready by polling document.readyState
+    private func waitForDocumentReady(webView: WKWebView) async throws {
+        let maxAttempts = 50 // 5 seconds max
+        var attempts = 0
+
+        while attempts < maxAttempts {
+            try Task.checkCancellation()
+
+            do {
+                let readyState = try await webView.evaluateJavaScript("document.readyState") as? String
+                logger.debug("Document readyState: \(readyState ?? "unknown")")
+                if readyState == "complete" || readyState == "interactive" {
+                    return
+                }
+            } catch {
+                // If we can't even evaluate JS, the page isn't ready yet
+                logger.debug("Waiting for document... (\(error.localizedDescription))")
+            }
+
+            try await Task.sleep(nanoseconds: 100_000_000) // 100ms between polls
+            attempts += 1
+        }
+
+        logger.warning("Document never reached ready state, proceeding anyway")
     }
 }
