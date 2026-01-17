@@ -230,11 +230,15 @@ private final class URLNavigationDelegate: NSObject, WKNavigationDelegate {
 
     /// Escape string for JavaScript using JSON serialization (handles all special characters)
     private func escapeForJS(_ string: String) throws -> String {
-        let data = try JSONSerialization.data(withJSONObject: string)
-        guard let escaped = String(data: data, encoding: .utf8) else {
+        // Wrap in array since JSONSerialization requires a collection as top-level object
+        let data = try JSONSerialization.data(withJSONObject: [string])
+        guard let arrayString = String(data: data, encoding: .utf8) else {
             throw DemarkError.invalidInput("Failed to escape selector: \(string)")
         }
-        return escaped // Returns properly quoted string like "article" or "div[data-id=\"foo\"]"
+        // Extract the quoted string from the array: ["value"] -> "value"
+        let startIndex = arrayString.index(after: arrayString.startIndex) // Skip [
+        let endIndex = arrayString.index(before: arrayString.endIndex) // Skip ]
+        return String(arrayString[startIndex ..< endIndex])
     }
 
     private func complete(with result: Result<String, Error>) {
