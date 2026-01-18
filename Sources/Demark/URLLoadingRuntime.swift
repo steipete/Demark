@@ -22,7 +22,6 @@ final class URLLoadingRuntime {
     // MARK: - Properties
 
     private let logger = Logger(subsystem: "com.demark", category: "url-loading")
-    private var webView: WKWebView?
     private var navigationDelegate: URLNavigationDelegate?
 
     // MARK: - Lifecycle
@@ -39,6 +38,9 @@ final class URLLoadingRuntime {
     /// untrusted pages. Supports waiting for JavaScript to settle and extracting
     /// specific content via CSS selectors.
     ///
+    /// This method supports concurrent calls - each invocation uses its own webView
+    /// and cleanup is isolated to that specific request.
+    ///
     /// - Parameters:
     ///   - url: The URL to load
     ///   - options: Loading configuration options
@@ -47,11 +49,9 @@ final class URLLoadingRuntime {
     func loadAndExtract(url: URL, options: URLLoadingOptions) async throws -> String {
         // Create fresh ephemeral WebView for each load
         let webView = createWebView(userAgent: options.userAgent)
-        self.webView = webView
 
         defer {
-            self.webView?.stopLoading()
-            self.webView = nil
+            webView.stopLoading()
             self.navigationDelegate = nil
         }
 
@@ -59,7 +59,7 @@ final class URLLoadingRuntime {
             try await performLoad(webView: webView, url: url, options: options)
         } onCancel: {
             Task { @MainActor in
-                self.webView?.stopLoading()
+                webView.stopLoading()
             }
         }
     }

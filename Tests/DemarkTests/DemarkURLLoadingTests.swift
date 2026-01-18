@@ -367,3 +367,26 @@ struct DemarkURLLoadingCancellationTests {
         }
     }
 }
+
+// MARK: - Concurrent Load Tests
+
+@MainActor
+struct DemarkURLLoadingConcurrencyTests {
+    @Test("Concurrent URL loads don't cross-cancel")
+    func concurrentURLLoads() async throws {
+        let service = Demark()
+        let urls = [
+            URL(string: "https://example.com")!,
+            URL(string: "https://example.org")!,
+        ]
+
+        try await withThrowingTaskGroup(of: String.self) { group in
+            for url in urls {
+                group.addTask { try await service.convertToMarkdown(url: url) }
+            }
+            for try await result in group {
+                #expect(!result.isEmpty)
+            }
+        }
+    }
+}
