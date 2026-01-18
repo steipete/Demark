@@ -114,7 +114,7 @@ final class URLLoadingRuntime {
 
             // Set up timeout (delegate will cancel this task on completion)
             delegate.timeoutTask = Task {
-                try? await Task.sleep(nanoseconds: UInt64(options.timeout * 1_000_000_000))
+                try? await Task.sleep(nanoseconds: UInt64(max(0, options.timeout) * 1_000_000_000))
                 delegate.handleTimeout()
             }
         }
@@ -154,7 +154,7 @@ private final class URLNavigationDelegate: NSObject, WKNavigationDelegate {
                 }
 
                 if options.idleDelay > 0 {
-                    try await Task.sleep(nanoseconds: UInt64(options.idleDelay * 1_000_000_000))
+                    try await Task.sleep(nanoseconds: UInt64(max(0, options.idleDelay) * 1_000_000_000))
                 }
 
                 try Task.checkCancellation()
