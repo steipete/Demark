@@ -113,9 +113,11 @@ final class URLLoadingRuntime {
             webView.load(request)
 
             // Set up timeout (delegate will cancel this task on completion)
-            delegate.timeoutTask = Task {
-                try? await Task.sleep(nanoseconds: UInt64(max(0, options.timeout) * 1_000_000_000))
-                delegate.handleTimeout()
+            if let nanoseconds = clampedNanoseconds(options.timeout) {
+                delegate.timeoutTask = Task {
+                    try? await Task.sleep(nanoseconds: nanoseconds)
+                    delegate.handleTimeout()
+                }
             }
         }
     }
@@ -153,8 +155,8 @@ private final class URLNavigationDelegate: NSObject, WKNavigationDelegate {
                     try await waitForIdle(webView: webView)
                 }
 
-                if options.idleDelay > 0 {
-                    try await Task.sleep(nanoseconds: UInt64(max(0, options.idleDelay) * 1_000_000_000))
+                if let nanoseconds = clampedNanoseconds(options.idleDelay), nanoseconds > 0 {
+                    try await Task.sleep(nanoseconds: nanoseconds)
                 }
 
                 try Task.checkCancellation()
@@ -179,7 +181,13 @@ private final class URLNavigationDelegate: NSObject, WKNavigationDelegate {
     func handleTimeout() {
         guard !hasCompleted else { return }
         logger.warning("Page load timed out for: \(self.url.absoluteString)")
-        complete(with: .failure(DemarkError.urlLoadingTimeout("\(url.absoluteString) after \(Int(options.timeout)) seconds")))
+        let secondsDescription: String
+        if let nanoseconds = clampedNanoseconds(options.timeout) {
+            secondsDescription = String(nanoseconds / 1_000_000_000)
+        } else {
+            secondsDescription = "∞"
+        }
+        complete(with: .failure(DemarkError.urlLoadingTimeout("\(url.absoluteString) after \(secondsDescription) seconds")))
     }
 
     private func waitForIdle(webView: WKWebView) async throws {
@@ -255,4 +263,11 @@ private final class URLNavigationDelegate: NSObject, WKNavigationDelegate {
         }
         continuation = nil
     }
+}
+
+private func clampedNanoseconds(_ seconds: TimeInterval) -> UInt64? {
+    guard seconds.isFinite else { return nil }
+    let maxSeconds = Double(UInt64.max) / 1_000_000_000
+    let clampedSeconds = max(0, min(seconds, maxSeconds))
+    return UInt64(clampedSeconds * 1_000_000_000)
 }
