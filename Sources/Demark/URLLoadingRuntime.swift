@@ -22,7 +22,7 @@ final class URLLoadingRuntime {
     // MARK: - Properties
 
     private let logger = Logger(subsystem: "com.demark", category: "url-loading")
-    private var navigationDelegate: URLNavigationDelegate?
+    private var activeDelegates: [ObjectIdentifier: URLNavigationDelegate] = [:]
 
     // MARK: - Lifecycle
 
@@ -52,7 +52,7 @@ final class URLLoadingRuntime {
 
         defer {
             webView.stopLoading()
-            self.navigationDelegate = nil
+            self.activeDelegates.removeValue(forKey: ObjectIdentifier(webView))
         }
 
         return try await withTaskCancellationHandler {
@@ -60,6 +60,9 @@ final class URLLoadingRuntime {
         } onCancel: {
             Task { @MainActor in
                 webView.stopLoading()
+                if let delegate = self.activeDelegates[ObjectIdentifier(webView)] {
+                    delegate.cancel()
+                }
             }
         }
     }
@@ -106,7 +109,7 @@ final class URLLoadingRuntime {
                 logger: logger,
                 continuation: continuation
             )
-            self.navigationDelegate = delegate
+            self.activeDelegates[ObjectIdentifier(webView)] = delegate
             webView.navigationDelegate = delegate
 
             let request = URLRequest(url: url)
@@ -188,6 +191,11 @@ private final class URLNavigationDelegate: NSObject, WKNavigationDelegate {
             secondsDescription = "∞"
         }
         complete(with: .failure(DemarkError.urlLoadingTimeout("\(url.absoluteString) after \(secondsDescription) seconds")))
+    }
+
+    func cancel() {
+        guard !hasCompleted else { return }
+        complete(with: .failure(CancellationError()))
     }
 
     private func waitForIdle(webView: WKWebView) async throws {
