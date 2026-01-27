@@ -112,7 +112,10 @@ final class URLLoadingRuntime {
             self.activeDelegates[ObjectIdentifier(webView)] = delegate
             webView.navigationDelegate = delegate
 
-            let request = URLRequest(url: url)
+            var request = URLRequest(url: url)
+            if options.timeout.isFinite, options.timeout > 0 {
+                request.timeoutInterval = options.timeout
+            }
             webView.load(request)
 
             // Set up timeout (delegate will cancel this task on completion)
