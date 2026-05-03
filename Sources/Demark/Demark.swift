@@ -16,6 +16,7 @@ final class ConversionRuntime {
     private let logger = Logger(subsystem: "com.demark", category: "conversion")
     private let turndownRuntime = TurndownRuntime()
     private let htmlToMdRuntime = HTMLToMdRuntime()
+    private lazy var urlLoadingRuntime = URLLoadingRuntime()
 
     // MARK: - Public Methods
 
@@ -55,6 +56,22 @@ final class ConversionRuntime {
         }
 
         return normalizeMarkdown(rawMarkdown, bulletMarker: options.bulletListMarker)
+    }
+
+    /// Load URL and convert to Markdown
+    func urlToMarkdown(_ url: URL, options: DemarkOptions, loadingOptions: URLLoadingOptions) async throws -> String {
+        logger.info("Loading URL for conversion: \(url.absoluteString)")
+
+        // Validate URL scheme
+        guard url.scheme == "http" || url.scheme == "https" else {
+            throw DemarkError.invalidURLScheme("Only http and https URLs are supported, got: \(url.scheme ?? "nil")")
+        }
+
+        // Load and extract HTML
+        let html = try await urlLoadingRuntime.loadAndExtract(url: url, options: loadingOptions)
+
+        // Convert using existing pipeline
+        return try await htmlToMarkdown(html, options: options)
     }
 
     // MARK: - Normalization helpers
@@ -195,5 +212,60 @@ public final class Demark {
     /// - `DemarkError`: Error types that can be thrown during conversion
     public func convertToMarkdown(_ html: String, options: DemarkOptions = DemarkOptions()) async throws -> String {
         try await conversionRuntime.htmlToMarkdown(html, options: options)
+    }
+
+    /// Convert a website URL to Markdown format
+    ///
+    /// Loads the URL in a WebView, waits for JavaScript execution to complete,
+    /// extracts the rendered HTML, and converts it to Markdown.
+    ///
+    /// - Parameters:
+    ///   - url: The URL to load and convert
+    ///   - options: Configuration options for the HTML to Markdown conversion process
+    ///   - loadingOptions: Configuration options for URL loading behavior
+    /// - Returns: The converted Markdown string
+    /// - Throws: DemarkError if loading or conversion fails
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let demark = Demark()
+    /// let url = URL(string: "https://example.com")!
+    ///
+    /// // Basic usage with defaults
+    /// let markdown = try await demark.convertToMarkdown(url: url)
+    ///
+    /// // Extract only article content with custom timeout
+    /// let loadingOptions = URLLoadingOptions(
+    ///     timeout: 60,
+    ///     contentSelector: "article"
+    /// )
+    /// let markdown = try await demark.convertToMarkdown(
+    ///     url: url,
+    ///     loadingOptions: loadingOptions
+    /// )
+    /// ```
+    ///
+    /// ## Security
+    ///
+    /// Uses an ephemeral WebView with non-persistent storage for security.
+    /// Each URL load creates a fresh WebView to prevent cookie/cache pollution.
+    ///
+    /// ## Network Requirements
+    ///
+    /// Plain HTTP URLs may require App Transport Security exceptions.
+    /// Only `http` and `https` URL schemes are supported.
+    ///
+    /// ## See Also
+    ///
+    /// - `URLLoadingOptions`: Configuration options for URL loading
+    /// - `DemarkOptions`: Configuration options for HTML to Markdown conversion
+    /// - `DemarkError`: Error types that can be thrown during loading or conversion
+    public func convertToMarkdown(
+        url: URL,
+        options: DemarkOptions = DemarkOptions(),
+        loadingOptions: URLLoadingOptions = URLLoadingOptions()
+    ) async throws -> String {
+        try await conversionRuntime.urlToMarkdown(url, options: options, loadingOptions: loadingOptions)
     }
 }

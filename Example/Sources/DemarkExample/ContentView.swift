@@ -14,15 +14,30 @@ import SwiftUI
 #endif
 
 struct ContentView: View {
+    @State var inputMode: InputMode = .html
     @State var htmlInput: String = SampleHTML.defaultHTML
+    @State var urlInput: String = "https://example.com"
     @State var markdownOutput: String = ""
     @State var isConverting: Bool = false
     @State var conversionError: String?
     @State var selectedTab: OutputTab = .source
     @State var options = DemarkOptions()
     @State var selectedEngine: ConversionEngine = .turndown
+    @State var urlLoadingOptions = URLLoadingOptions()
 
     private let demark = Demark()
+
+    enum InputMode: String, CaseIterable {
+        case html = "HTML"
+        case url = "URL"
+
+        var icon: String {
+            switch self {
+            case .html: "chevron.left.forwardslash.chevron.right"
+            case .url: "link"
+            }
+        }
+    }
 
     enum OutputTab: String, CaseIterable {
         case source = "Source"
@@ -49,23 +64,47 @@ struct ContentView: View {
     var inputHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Label("HTML Input", systemImage: "chevron.left.forwardslash.chevron.right")
+                Label(inputMode == .html ? "HTML Input" : "URL Input", systemImage: inputMode.icon)
                     .font(.title2)
                     .fontWeight(.semibold)
 
                 Spacer()
 
-                sampleHTMLMenu
+                inputModePicker
+
+                if inputMode == .html {
+                    sampleHTMLMenu
+                }
             }
 
-            Text("Paste or type your HTML content below")
+            Text(inputMode == .html ? "Paste or type your HTML content below" : "Enter a URL to fetch and convert")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
         .padding()
     }
 
+    var inputModePicker: some View {
+        Picker("Input Mode", selection: $inputMode) {
+            ForEach(InputMode.allCases, id: \.self) { mode in
+                Label(mode.rawValue, systemImage: mode.icon).tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(width: 140)
+    }
+
+    @ViewBuilder
     var inputEditor: some View {
+        switch inputMode {
+        case .html:
+            htmlInputEditor
+        case .url:
+            urlInputEditor
+        }
+    }
+
+    var htmlInputEditor: some View {
         ScrollView {
             TextEditor(text: $htmlInput)
                 .font(.system(.body, design: .monospaced))
@@ -79,6 +118,51 @@ struct ContentView: View {
                 .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
         )
         .padding(.horizontal)
+    }
+
+    var urlInputEditor: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("URL")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                TextField("https://example.com", text: $urlInput)
+                    .font(.system(.body, design: .monospaced))
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Content Selector (optional)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                TextField("e.g., article, main, .content", text: contentSelectorBinding)
+                    .font(.system(.body, design: .monospaced))
+                    .textFieldStyle(.roundedBorder)
+
+                Text("CSS selector to extract specific content from the page")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding()
+        .background(platformBackgroundColor)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+        )
+        .padding(.horizontal)
+    }
+
+    private var contentSelectorBinding: Binding<String> {
+        Binding(
+            get: { urlLoadingOptions.contentSelector ?? "" },
+            set: { urlLoadingOptions.contentSelector = $0.isEmpty ? nil : $0 }
+        )
     }
 
     var sampleHTMLMenu: some View {
@@ -312,14 +396,23 @@ struct ContentView: View {
     // MARK: - Action Buttons
 
     var convertButton: some View {
-        Button(action: convertHTML) {
+        Button(action: performConversion) {
             HStack {
                 Image(systemName: "arrow.right.circle.fill")
                 Text("Convert")
             }
         }
         .keyboardShortcut(.return, modifiers: .command)
-        .disabled(isConverting || htmlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .disabled(isConverting || !hasValidInput)
+    }
+
+    private var hasValidInput: Bool {
+        switch inputMode {
+        case .html:
+            return !htmlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .url:
+            return URL(string: urlInput) != nil && !urlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
     }
 
     private var copyButton: some View {
@@ -333,6 +426,16 @@ struct ContentView: View {
     // MARK: - Actions
 
     @MainActor
+    func performConversion() {
+        switch inputMode {
+        case .html:
+            convertHTML()
+        case .url:
+            convertURL()
+        }
+    }
+
+    @MainActor
     func convertHTML() {
         guard !htmlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
@@ -342,6 +445,34 @@ struct ContentView: View {
         Task {
             do {
                 let result = try await demark.convertToMarkdown(htmlInput, options: options)
+                markdownOutput = result
+                conversionError = nil
+            } catch {
+                conversionError = error.localizedDescription
+                markdownOutput = ""
+            }
+
+            isConverting = false
+        }
+    }
+
+    @MainActor
+    func convertURL() {
+        guard let url = URL(string: urlInput) else {
+            conversionError = "Invalid URL"
+            return
+        }
+
+        isConverting = true
+        conversionError = nil
+
+        Task {
+            do {
+                let result = try await demark.convertToMarkdown(
+                    url: url,
+                    options: options,
+                    loadingOptions: urlLoadingOptions
+                )
                 markdownOutput = result
                 conversionError = nil
             } catch {

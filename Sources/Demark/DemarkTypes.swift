@@ -174,6 +174,68 @@ public struct DemarkOptions: Sendable {
     }
 }
 
+// MARK: - URL Loading Options
+
+/// Options for loading URLs in a WebView before conversion
+///
+/// Controls how Demark loads web pages, including timeout behavior,
+/// JavaScript idle detection, and content extraction.
+///
+/// ## Example Usage
+///
+/// ```swift
+/// // Basic usage with defaults
+/// let markdown = try await demark.convertToMarkdown(url: url)
+///
+/// // Extract only article content with custom timeout
+/// let options = URLLoadingOptions(
+///     timeout: 60,
+///     contentSelector: "article"
+/// )
+/// let markdown = try await demark.convertToMarkdown(url: url, loadingOptions: options)
+/// ```
+public struct URLLoadingOptions: Sendable {
+    /// Default configuration with sensible settings
+    public static let `default` = URLLoadingOptions()
+
+    /// Maximum time to wait for page load (seconds)
+    public var timeout: TimeInterval
+
+    /// Wait for JavaScript to settle after page load
+    public var waitForIdle: Bool
+
+    /// Additional delay after page appears loaded (seconds)
+    public var idleDelay: TimeInterval
+
+    /// CSS selector to extract specific content (e.g., "article", "main")
+    public var contentSelector: String?
+
+    /// Custom user agent string
+    public var userAgent: String?
+
+    /// Create URL loading options with custom configuration
+    ///
+    /// - Parameters:
+    ///   - timeout: Maximum time to wait for page load (default: 30 seconds)
+    ///   - waitForIdle: Wait for JavaScript to settle after page load (default: true)
+    ///   - idleDelay: Additional delay after page appears loaded (default: 0.5 seconds)
+    ///   - contentSelector: CSS selector to extract specific content (default: nil, extracts full page)
+    ///   - userAgent: Custom user agent string (default: nil, uses system default)
+    public init(
+        timeout: TimeInterval = 30,
+        waitForIdle: Bool = true,
+        idleDelay: TimeInterval = 0.5,
+        contentSelector: String? = nil,
+        userAgent: String? = nil
+    ) {
+        self.timeout = timeout
+        self.waitForIdle = waitForIdle
+        self.idleDelay = idleDelay
+        self.contentSelector = contentSelector
+        self.userAgent = userAgent
+    }
+}
+
 // MARK: - Error Types
 
 /// Errors that can occur during HTML to Markdown conversion.
@@ -189,6 +251,10 @@ public enum DemarkError: LocalizedError, Sendable {
     case jsException(String)
     case bundleResourceMissing(String)
     case webViewInitializationFailed
+    case urlLoadingTimeout(String)
+    case urlNavigationFailed(String)
+    case invalidURLScheme(String)
+    case contentSelectorNotFound(String)
 
     // MARK: Public
 
@@ -217,6 +283,14 @@ public enum DemarkError: LocalizedError, Sendable {
             "Required bundle resource missing: \(resource)"
         case .webViewInitializationFailed:
             "Failed to initialize WKWebView"
+        case let .urlLoadingTimeout(details):
+            "URL loading timed out: \(details)"
+        case let .urlNavigationFailed(details):
+            "URL navigation failed: \(details)"
+        case let .invalidURLScheme(details):
+            "Invalid URL scheme: \(details)"
+        case let .contentSelectorNotFound(selector):
+            "Content selector '\(selector)' matched no elements"
         }
     }
 }
