@@ -165,7 +165,6 @@ struct MarkdownRenderer: View {
         }
     }
 
-    @ViewBuilder
     private func renderTableHeader(_ headers: [String]) -> some View {
         HStack(spacing: 0) {
             ForEach(Array(headers.enumerated()), id: \.offset) { index, header in
@@ -186,7 +185,6 @@ struct MarkdownRenderer: View {
         )
     }
 
-    @ViewBuilder
     private func renderTableRow(_ row: [String]) -> some View {
         HStack(spacing: 0) {
             ForEach(Array(row.enumerated()), id: \.offset) { index, cell in
@@ -290,7 +288,7 @@ struct TableData {
     let rows: [[String]]
 }
 
-// Simple markdown parser for demonstration
+/// Simple markdown parser for demonstration
 func parseMarkdown(_ markdown: String) -> [MarkdownElement] {
     var parser = MarkdownParser(lines: markdown.components(separatedBy: .newlines))
     return parser.parse()

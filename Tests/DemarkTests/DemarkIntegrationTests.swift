@@ -12,7 +12,7 @@ import Testing
 @MainActor
 struct DemarkIntegrationTests {
     @Test("JavaScript libraries exist in bundle")
-    func javaScriptLibrariesExist() async throws {
+    func javaScriptLibrariesExist() {
         let bundle = Bundle.module
         #expect(bundle.path(forResource: "turndown.min", ofType: "js") != nil)
         #expect(bundle.path(forResource: "html-to-md.min", ofType: "js") != nil)

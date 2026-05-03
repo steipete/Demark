@@ -23,7 +23,7 @@ final class TurndownRuntime {
 
     private let logger = Logger(subsystem: "com.demark", category: "turndown")
     private var isInitialized = false
-    // Strong reference to prevent garbage collection
+    /// Strong reference to prevent garbage collection
     private var webView: WKWebView?
 
     // MARK: - Lifecycle

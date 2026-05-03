@@ -8,7 +8,6 @@
 import Foundation
 import Testing
 import WebKit
-
 @testable import Demark
 
 @MainActor
