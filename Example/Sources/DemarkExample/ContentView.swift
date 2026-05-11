@@ -409,9 +409,9 @@ struct ContentView: View {
     private var hasValidInput: Bool {
         switch inputMode {
         case .html:
-            return !htmlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            !htmlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .url:
-            return URL(string: urlInput) != nil && !urlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            URL(string: urlInput) != nil && !urlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
 

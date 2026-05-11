@@ -5,12 +5,12 @@
 **The Swift package that turns down HTML and turns up Markdown – it's a markup markdown!**
 
 [![Swift 6](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
-[![Platforms](https://img.shields.io/badge/Platforms-iOS%20|%20macOS%20|%20watchOS%20|%20tvOS%20|%20visionOS-lightgrey.svg)](https://developer.apple.com/swift/)
+[![Platforms](https://img.shields.io/badge/Platforms-iOS%20|%20macOS%20|%20visionOS-lightgrey.svg)](https://developer.apple.com/swift/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## Features
 
-- 🌍 **Universal Apple Platform Support**: Works seamlessly on iOS, macOS, watchOS, tvOS, and visionOS
+- 🌍 **Apple Platform Support**: Full runtime support on iOS, macOS, and visionOS, with clear runtime errors on platforms where Apple does not ship the required WebKit/JavaScriptCore frameworks
 - 🎯 **WKWebView Integration**: Real browser DOM environment for accurate HTML parsing
 - ⚡ **Turndown.js Powered**: Industry-standard HTML to Markdown conversion engine
 - 🔒 **Swift 6 Ready**: Full concurrency support with strict checking enabled
@@ -80,7 +80,7 @@ Demark provides two HTML to Markdown conversion engines, each with different tra
 **When to use**:
 - High-performance requirements or batch conversions
 - Simple, well-formed HTML content
-- Memory-constrained environments (watchOS, widgets)
+- Memory-constrained environments and widgets
 - Background processing needs
 
 ### Usage Example
@@ -133,8 +133,10 @@ The example app provides a dual-pane interface where you can input HTML on the l
 ## Requirements
 
 - **Swift 6.0+**
-- **iOS 16.0+** / **macOS 14.0+** / **watchOS 10.0+** / **tvOS 17.0+** / **visionOS 1.0+**
+- **iOS 16.0+** / **macOS 14.0+** / **visionOS 1.0+**
 - **WebKit framework**
+- `html-to-md` also requires JavaScriptCore.
+- On platforms where WebKit or JavaScriptCore are unavailable, Demark compiles and throws `DemarkError.runtimeUnavailable` for the affected engine/API.
 
 ## Installation
 
@@ -346,7 +348,7 @@ func convertHTML() async throws -> String {
 - **First Conversion**: ~100ms (includes one-time WKWebView setup)
 - **Subsequent Conversions**: ~10-50ms (reuses WebView instance)
 - **Memory Efficient**: Single WebView per Demark instance
-- **Platform Optimized**: Different configurations for each platform
+- **Platform Aware**: Uses the best available Apple JavaScript/WebKit runtime and reports unsupported runtimes clearly
 
 ## Platform Support Details
 
@@ -355,15 +357,15 @@ func convertHTML() async throws -> String {
 - Enhanced JavaScript execution environment
 - Optimized for large document processing
 
-### iOS (17.0+) & visionOS (1.0+)
+### iOS (16.0+) & visionOS (1.0+)
 - Full functionality with mobile/spatial optimizations  
 - Respects system memory constraints
 - Optimized for touch/gesture interfaces
 
 ### watchOS (10.0+) & tvOS (17.0+)
-- Core functionality with minimal WebView footprint
-- Optimized for limited resources
-- Essential conversion features available
+- The package compiles, but conversion depends on Apple framework availability.
+- Turndown and URL conversion require WebKit and throw `DemarkError.runtimeUnavailable` where WebKit is absent.
+- html-to-md requires JavaScriptCore and throws `DemarkError.runtimeUnavailable` where JavaScriptCore is absent.
 
 ## Examples
 

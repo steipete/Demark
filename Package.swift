@@ -19,7 +19,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        // No external dependencies - uses only WebKit and Foundation
+        // No external dependencies - uses Apple WebKit/JavaScriptCore runtimes when available.
     ],
     targets: [
         .target(

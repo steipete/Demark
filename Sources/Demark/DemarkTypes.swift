@@ -255,6 +255,7 @@ public enum DemarkError: LocalizedError, Sendable {
     case urlNavigationFailed(String)
     case invalidURLScheme(String)
     case contentSelectorNotFound(String)
+    case runtimeUnavailable(String)
 
     // MARK: Public
 
@@ -291,6 +292,8 @@ public enum DemarkError: LocalizedError, Sendable {
             "Invalid URL scheme: \(details)"
         case let .contentSelectorNotFound(selector):
             "Content selector '\(selector)' matched no elements"
+        case let .runtimeUnavailable(details):
+            "Runtime unavailable: \(details)"
         }
     }
 }

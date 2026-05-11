@@ -137,7 +137,8 @@ final class ConversionRuntime {
 /// - Fast string-based parsing for valid HTML (html-to-md)
 /// - Native HTML parsing support
 /// - Async/await interface
-/// - Cross-platform support for all Apple platforms
+/// - Compile-time support for Apple platforms with graceful runtime errors when
+///   WebKit/JavaScriptCore are unavailable
 ///
 /// ## Engine Selection
 ///
@@ -146,12 +147,12 @@ final class ConversionRuntime {
 ///
 /// ## Platform Support
 ///
-/// Demark works on all Apple platforms with WebKit support:
+/// Demark works fully on Apple platforms with WebKit and JavaScriptCore:
 /// - **macOS 14.0+**: Full functionality with desktop optimizations
 /// - **iOS 16.0+**: Full functionality with mobile optimizations
-/// - **watchOS 10.0+**: Core functionality with minimal WebView
-/// - **tvOS 17.0+**: Core functionality with TV-optimized WebView
 /// - **visionOS 1.0+**: Full functionality with spatial computing optimizations
+/// On platforms where Apple does not provide WebKit/JavaScriptCore, Demark
+/// compiles but throws `DemarkError.runtimeUnavailable`.
 @MainActor
 public final class Demark {
     // MARK: - Properties

@@ -7,14 +7,14 @@ struct DemarkURLLoadingTests {
     // MARK: - Unit Tests: Invalid URL Schemes
 
     @Test("Invalid URL scheme - file:// rejected")
-    func invalidURLSchemeFile() async {
+    func invalidURLSchemeFile() async throws {
         let service = Demark()
-        let url = URL(string: "file:///tmp/test.html")!
+        let url = try #require(URL(string: "file:///tmp/test.html"))
 
         do {
             _ = try await service.convertToMarkdown(url: url)
             #expect(Bool(false), "Expected DemarkError.invalidURLScheme for file:// URL")
-        } catch DemarkError.invalidURLScheme(let details) {
+        } catch let DemarkError.invalidURLScheme(details) {
             #expect(details.contains("file"))
             #expect(details.contains("Only http and https"))
         } catch {
@@ -23,14 +23,14 @@ struct DemarkURLLoadingTests {
     }
 
     @Test("Invalid URL scheme - ftp:// rejected")
-    func invalidURLSchemeFTP() async {
+    func invalidURLSchemeFTP() async throws {
         let service = Demark()
-        let url = URL(string: "ftp://example.com/file.txt")!
+        let url = try #require(URL(string: "ftp://example.com/file.txt"))
 
         do {
             _ = try await service.convertToMarkdown(url: url)
             #expect(Bool(false), "Expected DemarkError.invalidURLScheme for ftp:// URL")
-        } catch DemarkError.invalidURLScheme(let details) {
+        } catch let DemarkError.invalidURLScheme(details) {
             #expect(details.contains("ftp"))
         } catch {
             #expect(Bool(false), "Unexpected error: \(error)")
@@ -38,14 +38,14 @@ struct DemarkURLLoadingTests {
     }
 
     @Test("Invalid URL scheme - custom scheme rejected")
-    func invalidURLSchemeCustom() async {
+    func invalidURLSchemeCustom() async throws {
         let service = Demark()
-        let url = URL(string: "myapp://page/content")!
+        let url = try #require(URL(string: "myapp://page/content"))
 
         do {
             _ = try await service.convertToMarkdown(url: url)
             #expect(Bool(false), "Expected DemarkError.invalidURLScheme for custom scheme")
-        } catch DemarkError.invalidURLScheme(let details) {
+        } catch let DemarkError.invalidURLScheme(details) {
             #expect(details.contains("myapp"))
         } catch {
             #expect(Bool(false), "Unexpected error: \(error)")
@@ -133,6 +133,15 @@ struct DemarkURLLoadingTests {
         #expect(description.contains("article.main-content"))
         #expect(description.contains("matched no elements"))
     }
+
+    @Test("Error description - runtimeUnavailable")
+    func errorDescriptionRuntimeUnavailable() {
+        let error = DemarkError.runtimeUnavailable("WebKit is not available")
+        let description = error.errorDescription ?? ""
+
+        #expect(description.contains("Runtime unavailable"))
+        #expect(description.contains("WebKit"))
+    }
 }
 
 // MARK: - Integration Tests
@@ -142,7 +151,7 @@ struct DemarkURLLoadingIntegrationTests {
     @Test("Load example.com and convert to markdown")
     func loadExampleDotCom() async throws {
         let service = Demark()
-        let url = URL(string: "https://example.com")!
+        let url = try #require(URL(string: "https://example.com"))
 
         let loadingOptions = URLLoadingOptions(
             timeout: 30,
@@ -160,7 +169,7 @@ struct DemarkURLLoadingIntegrationTests {
     @Test("Load with content selector extracts specific element")
     func loadWithContentSelector() async throws {
         let service = Demark()
-        let url = URL(string: "https://example.com")!
+        let url = try #require(URL(string: "https://example.com"))
 
         // example.com has a <div> container with the main content
         let loadingOptions = URLLoadingOptions(
@@ -174,9 +183,9 @@ struct DemarkURLLoadingIntegrationTests {
     }
 
     @Test("Content selector not found throws error")
-    func contentSelectorNotFound() async {
+    func contentSelectorNotFound() async throws {
         let service = Demark()
-        let url = URL(string: "https://example.com")!
+        let url = try #require(URL(string: "https://example.com"))
 
         let loadingOptions = URLLoadingOptions(
             timeout: 30,
@@ -186,7 +195,7 @@ struct DemarkURLLoadingIntegrationTests {
         do {
             _ = try await service.convertToMarkdown(url: url, loadingOptions: loadingOptions)
             #expect(Bool(false), "Expected DemarkError.contentSelectorNotFound")
-        } catch DemarkError.contentSelectorNotFound(let selector) {
+        } catch let DemarkError.contentSelectorNotFound(selector) {
             #expect(selector == "article.nonexistent-class-xyz")
         } catch {
             #expect(Bool(false), "Unexpected error: \(error)")
@@ -196,7 +205,7 @@ struct DemarkURLLoadingIntegrationTests {
     @Test("Custom user agent is applied")
     func customUserAgent() async throws {
         let service = Demark()
-        let url = URL(string: "https://example.com")!
+        let url = try #require(URL(string: "https://example.com"))
 
         let loadingOptions = URLLoadingOptions(
             timeout: 30,
@@ -209,10 +218,10 @@ struct DemarkURLLoadingIntegrationTests {
     }
 
     @Test("Short timeout with slow request")
-    func shortTimeoutError() async {
+    func shortTimeoutError() async throws {
         let service = Demark()
         // Use a URL that will definitely timeout with 0.1s timeout
-        let url = URL(string: "https://example.com")!
+        let url = try #require(URL(string: "https://example.com"))
 
         let loadingOptions = URLLoadingOptions(
             timeout: 0.001, // 1ms - will timeout
@@ -223,7 +232,7 @@ struct DemarkURLLoadingIntegrationTests {
         do {
             _ = try await service.convertToMarkdown(url: url, loadingOptions: loadingOptions)
             // If it succeeds (very fast network), that's fine too
-        } catch DemarkError.urlLoadingTimeout(let details) {
+        } catch let DemarkError.urlLoadingTimeout(details) {
             #expect(details.contains("example.com"))
         } catch {
             // Other network errors are acceptable
@@ -239,7 +248,7 @@ struct DemarkURLLoadingEdgeCaseTests {
     func urlWithQueryParams() async throws {
         let service = Demark()
         // example.com ignores query params but we're testing URL handling
-        let url = URL(string: "https://example.com/?foo=bar&baz=123")!
+        let url = try #require(URL(string: "https://example.com/?foo=bar&baz=123"))
 
         let markdown = try await service.convertToMarkdown(url: url)
         #expect(markdown.contains("Example Domain"))
@@ -248,7 +257,7 @@ struct DemarkURLLoadingEdgeCaseTests {
     @Test("URL with fragment")
     func urlWithFragment() async throws {
         let service = Demark()
-        let url = URL(string: "https://example.com/#section")!
+        let url = try #require(URL(string: "https://example.com/#section"))
 
         let markdown = try await service.convertToMarkdown(url: url)
         #expect(markdown.contains("Example Domain"))
@@ -258,7 +267,7 @@ struct DemarkURLLoadingEdgeCaseTests {
     func urlWithEncodedChars() async throws {
         let service = Demark()
         // %20 is space, example.com will handle this gracefully
-        let url = URL(string: "https://example.com/path%20with%20spaces")!
+        let url = try #require(URL(string: "https://example.com/path%20with%20spaces"))
 
         do {
             let markdown = try await service.convertToMarkdown(url: url)
@@ -272,7 +281,7 @@ struct DemarkURLLoadingEdgeCaseTests {
     @Test("Selector with attribute")
     func selectorWithAttribute() async throws {
         let service = Demark()
-        let url = URL(string: "https://example.com")!
+        let url = try #require(URL(string: "https://example.com"))
 
         // Test that attribute selectors work
         let loadingOptions = URLLoadingOptions(
@@ -287,7 +296,7 @@ struct DemarkURLLoadingEdgeCaseTests {
     @Test("Selector with quotes in attribute")
     func selectorWithQuotes() async throws {
         let service = Demark()
-        let url = URL(string: "https://example.com")!
+        let url = try #require(URL(string: "https://example.com"))
 
         // Test selector with quoted attribute value - use the actual IANA link
         let loadingOptions = URLLoadingOptions(
@@ -302,7 +311,7 @@ struct DemarkURLLoadingEdgeCaseTests {
     @Test("Minimal timeout and idle settings")
     func minimalDelays() async throws {
         let service = Demark()
-        let url = URL(string: "https://example.com")!
+        let url = try #require(URL(string: "https://example.com"))
 
         let loadingOptions = URLLoadingOptions(
             timeout: 30,
@@ -315,10 +324,10 @@ struct DemarkURLLoadingEdgeCaseTests {
     }
 
     @Test("HTTP URL scheme accepted")
-    func httpSchemeAccepted() async {
+    func httpSchemeAccepted() async throws {
         let service = Demark()
         // Note: May fail due to ATS, but should not throw invalidURLScheme
-        let url = URL(string: "http://example.com")!
+        let url = try #require(URL(string: "http://example.com"))
 
         do {
             let markdown = try await service.convertToMarkdown(url: url)
@@ -336,9 +345,9 @@ struct DemarkURLLoadingEdgeCaseTests {
 @MainActor
 struct DemarkURLLoadingCancellationTests {
     @Test("Task cancellation stops loading")
-    func taskCancellation() async {
+    func taskCancellation() async throws {
         let service = Demark()
-        let url = URL(string: "https://example.com")!
+        let url = try #require(URL(string: "https://example.com"))
 
         let loadingOptions = URLLoadingOptions(
             timeout: 60, // Long timeout
@@ -359,7 +368,7 @@ struct DemarkURLLoadingCancellationTests {
         case .success:
             // Fast completion before cancel is OK
             break
-        case .failure(let error):
+        case let .failure(error):
             // CancellationError or wrapped version is expected
             let isCancellation = error is CancellationError ||
                 String(describing: error).contains("cancel")
@@ -375,9 +384,9 @@ struct DemarkURLLoadingConcurrencyTests {
     @Test("Concurrent URL loads don't cross-cancel")
     func concurrentURLLoads() async throws {
         let service = Demark()
-        let urls = [
-            URL(string: "https://example.com")!,
-            URL(string: "https://example.org")!,
+        let urls = try [
+            #require(URL(string: "https://example.com")),
+            #require(URL(string: "https://example.org")),
         ]
 
         try await withThrowingTaskGroup(of: String.self) { group in
