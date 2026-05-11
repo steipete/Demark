@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- URL conversion API: `convertToMarkdown(url:options:loadingOptions:)` loads pages in WKWebView, extracts rendered HTML, and converts it through the existing Markdown pipeline. Thanks @atacan.
+
+### Changed
+- Platform/runtime availability is now explicit: WebKit-backed conversion throws `runtimeUnavailable` when WebKit is unavailable, and html-to-md throws the same clear error when JavaScriptCore is unavailable.
+
 ## [1.1.0] - 2025-12-28
 
 ### Changed
