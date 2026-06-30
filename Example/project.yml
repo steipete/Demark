@@ -4,7 +4,7 @@ options:
   createIntermediateGroups: true
   deploymentTarget:
     macOS: "14.0"
-    iOS: "17.0"
+    iOS: "16.0"
   
 settings:
   base:
@@ -38,7 +38,7 @@ targets:
         SUPPORTS_MACCATALYST: NO
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: YES
         SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
-        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        IPHONEOS_DEPLOYMENT_TARGET: "16.0"
         ENABLE_PREVIEWS: YES
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
