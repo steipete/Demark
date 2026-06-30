@@ -15,10 +15,10 @@ jobs:
     runs-on: macos-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     - name: Cache Swift Package Manager
-      uses: actions/cache@v3
+      uses: actions/cache@v6
       with:
         path: .build
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
@@ -36,7 +36,7 @@ jobs:
     runs-on: macos-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     - name: Install SwiftLint
       run: brew install swiftlint
@@ -52,11 +52,11 @@ jobs:
     runs-on: macos-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     
     - name: Cache Swift Package Manager
-      uses: actions/cache@v3
+      uses: actions/cache@v6
       with:
         path: Example/.build
         key: ${{ runner.os }}-example-spm-${{ hashFiles('Example/**/Package.resolved') }}
