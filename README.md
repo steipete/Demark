@@ -5,12 +5,12 @@
 **The Swift package that turns down HTML and turns up Markdown – it's a markup markdown!**
 
 [![Swift 6](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
-[![Platforms](https://img.shields.io/badge/Platforms-iOS%20|%20macOS%20|%20visionOS-lightgrey.svg)](https://developer.apple.com/swift/)
+[![Platforms](https://img.shields.io/badge/Platforms-iOS%20|%20macOS%20|%20visionOS%20|%20watchOS%20|%20tvOS-lightgrey.svg)](https://developer.apple.com/swift/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## Features
 
-- 🌍 **Apple Platform Support**: Full runtime support on iOS, macOS, and visionOS, with clear runtime errors on platforms where Apple does not ship the required WebKit/JavaScriptCore frameworks
+- 🌍 **Apple Platform Support**: Full runtime support on iOS, macOS, and visionOS, plus clear runtime errors on watchOS and tvOS where Apple does not ship the required WebKit/JavaScriptCore frameworks
 - 🎯 **WKWebView Integration**: Real browser DOM environment for accurate HTML parsing
 - ⚡ **Turndown.js Powered**: Industry-standard HTML to Markdown conversion engine
 - 🔒 **Swift 6 Ready**: Full concurrency support with strict checking enabled
