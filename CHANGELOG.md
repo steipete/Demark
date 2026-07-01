@@ -5,7 +5,11 @@
 ### Added
 - URL conversion API: `convertToMarkdown(url:options:loadingOptions:)` loads pages in WKWebView, extracts rendered HTML, and converts it through the existing Markdown pipeline. Thanks @atacan.
 
+### Fixed
+- URL conversion now accepts case-insensitive HTTP and HTTPS schemes as required by URL standards.
+
 ### Changed
+- Live URL loading tests are now opt-in with `DEMARK_LIVE_TESTS=1`, keeping the default test suite deterministic and offline-safe.
 - Platform/runtime availability is now explicit: WebKit-backed conversion throws `runtimeUnavailable` when WebKit is unavailable, and html-to-md throws the same clear error when JavaScriptCore is unavailable.
 
 ## [1.1.0] - 2025-12-28

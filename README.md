@@ -429,6 +429,12 @@ Contributions are welcome! Please feel free to submit issues, feature requests, 
 swift test
 ```
 
+The default suite is deterministic and does not access the network. Run the opt-in URL loading tests against live sites with:
+
+```bash
+DEMARK_LIVE_TESTS=1 swift test --filter DemarkURLLoading
+```
+
 ### Code Quality
 
 This project uses SwiftLint and SwiftFormat to maintain code quality:

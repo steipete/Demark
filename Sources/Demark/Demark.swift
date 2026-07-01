@@ -63,7 +63,8 @@ final class ConversionRuntime {
         logger.info("Loading URL for conversion: \(url.absoluteString)")
 
         // Validate URL scheme
-        guard url.scheme == "http" || url.scheme == "https" else {
+        let scheme = url.scheme?.lowercased()
+        guard scheme == "http" || scheme == "https" else {
             throw DemarkError.invalidURLScheme("Only http and https URLs are supported, got: \(url.scheme ?? "nil")")
         }
 
