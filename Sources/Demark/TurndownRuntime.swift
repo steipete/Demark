@@ -25,6 +25,8 @@ import os.log
 
         private let logger = Logger(subsystem: "com.demark", category: "turndown")
         private var isInitialized = false
+        private var initializationDelegate: InitializationNavigationDelegate?
+        private var initializationTask: Task<Void, Error>?
         /// Strong reference to prevent garbage collection
         private var webView: WKWebView?
 
@@ -81,7 +83,7 @@ import os.log
         private func ensureWebViewReady() async throws -> WKWebView {
             if !isInitialized {
                 logger.info("WKWebView environment not initialized, initializing now...")
-                try await initializeJavaScriptEnvironment()
+                try await initializeIfNeeded()
             }
 
             guard let webView else {
@@ -96,7 +98,7 @@ import os.log
                 self.webView = nil
                 isInitialized = false
 
-                try await initializeJavaScriptEnvironment()
+                try await initializeIfNeeded()
 
                 guard let refreshedWebView = self.webView else {
                     throw DemarkError.jsEnvironmentInitializationFailed
@@ -114,9 +116,23 @@ import os.log
             return webView
         }
 
+        private func initializeIfNeeded() async throws {
+            if let initializationTask {
+                try await initializationTask.value
+                return
+            }
+
+            let task = Task { @MainActor in
+                try await self.initializeJavaScriptEnvironment()
+            }
+            initializationTask = task
+            defer { initializationTask = nil }
+            try await task.value
+        }
+
         private func turndownIsAvailable(in webView: WKWebView) async throws -> Bool {
             do {
-                let availability = try await webView.evaluateJavaScript("typeof TurndownService")
+                let availability = try await webView.evaluateJavaScript("typeof window.TurndownService")
                 guard let type = availability as? String else { return false }
                 return type == "function"
             } catch {
@@ -260,11 +276,9 @@ import os.log
             logger.info("Found turndown.min.js at: \(turndownPath)")
 
             do {
-                // Load a blank page first
-                webView.loadHTMLString("<html><head></head><body></body></html>", baseURL: nil)
-
-                // Wait for page to actually be ready (poll document.readyState)
-                try await waitForDocumentReady(webView: webView)
+                // Finish navigation before injecting the library so the page cannot replace
+                // its JavaScript world and silently force conversion onto the fallback engine.
+                try await loadBlankPage(in: webView)
 
                 // Load Turndown library
                 logger.info("Loading Turndown from: \(turndownPath)")
@@ -272,7 +286,10 @@ import os.log
                 logger.info("Successfully read Turndown (\(turndownScript.count) characters)")
 
                 // Load the Turndown library directly
-                _ = try await webView.evaluateJavaScript(turndownScript)
+                // Rollup's browser build keeps the constructor in a top-level binding that
+                // WKWebView does not retain across evaluateJavaScript calls unless exported.
+                let bootstrapScript = "\(turndownScript)\nwindow.TurndownService = TurndownService;\ntrue;"
+                _ = try await webView.evaluateJavaScript(bootstrapScript)
                 logger.info("Successfully loaded Turndown JavaScript library")
 
                 // Verify TurndownService is actually available
@@ -291,30 +308,56 @@ import os.log
             }
         }
 
-        /// Wait for document to be ready by polling document.readyState
-        private func waitForDocumentReady(webView: WKWebView) async throws {
-            let maxAttempts = 50 // 5 seconds max
-            var attempts = 0
-
-            while attempts < maxAttempts {
-                try Task.checkCancellation()
-
-                do {
-                    let readyState = try await webView.evaluateJavaScript("document.readyState") as? String
-                    logger.debug("Document readyState: \(readyState ?? "unknown")")
-                    if readyState == "complete" || readyState == "interactive" {
-                        return
-                    }
-                } catch {
-                    // If we can't even evaluate JS, the page isn't ready yet
-                    logger.debug("Waiting for document... (\(error.localizedDescription))")
-                }
-
-                try await Task.sleep(nanoseconds: 100_000_000) // 100ms between polls
-                attempts += 1
+        private func loadBlankPage(in webView: WKWebView) async throws {
+            defer {
+                webView.navigationDelegate = nil
+                initializationDelegate = nil
             }
 
-            logger.warning("Document never reached ready state, proceeding anyway")
+            try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { continuation in
+                    let delegate = InitializationNavigationDelegate(continuation: continuation)
+                    initializationDelegate = delegate
+                    webView.navigationDelegate = delegate
+                    webView.loadHTMLString("<html><head></head><body></body></html>", baseURL: nil)
+                }
+            } onCancel: {
+                Task { @MainActor in
+                    webView.stopLoading()
+                    self.initializationDelegate?.cancel()
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private final class InitializationNavigationDelegate: NSObject, WKNavigationDelegate {
+        private var continuation: CheckedContinuation<Void, Error>?
+
+        init(continuation: CheckedContinuation<Void, Error>) {
+            self.continuation = continuation
+        }
+
+        func webView(_: WKWebView, didFinish _: WKNavigation!) {
+            complete(with: .success(()))
+        }
+
+        func webView(_: WKWebView, didFail _: WKNavigation!, withError _: Error) {
+            complete(with: .failure(DemarkError.jsEnvironmentInitializationFailed))
+        }
+
+        func webView(_: WKWebView, didFailProvisionalNavigation _: WKNavigation!, withError _: Error) {
+            complete(with: .failure(DemarkError.jsEnvironmentInitializationFailed))
+        }
+
+        func cancel() {
+            complete(with: .failure(CancellationError()))
+        }
+
+        private func complete(with result: Result<Void, Error>) {
+            guard let continuation else { return }
+            self.continuation = nil
+            continuation.resume(with: result)
         }
     }
 #else
