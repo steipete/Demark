@@ -65,16 +65,15 @@ struct DemarkServiceBasicsTests {
     #if canImport(WebKit)
         @Test("Turndown initialization navigation is time-bounded")
         func initializationNavigationIsTimeBounded() async {
-            let clock = ContinuousClock()
-            let start = clock.now
             var delegate: InitializationNavigationDelegate?
+            var didRunTimeout = false
 
             do {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                     delegate = InitializationNavigationDelegate(
                         continuation: continuation,
                         timeout: .milliseconds(10),
-                        onTimeout: {}
+                        onTimeout: { didRunTimeout = true }
                     )
                 }
                 Issue.record("Expected initialization timeout")
@@ -82,7 +81,7 @@ struct DemarkServiceBasicsTests {
                 #expect(error is DemarkError)
             }
 
-            #expect(start.duration(to: clock.now) < .seconds(1))
+            #expect(didRunTimeout)
             _ = delegate
         }
     #endif
