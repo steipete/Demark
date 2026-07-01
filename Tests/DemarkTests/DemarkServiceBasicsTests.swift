@@ -61,4 +61,29 @@ struct DemarkServiceBasicsTests {
         #expect(markdown.contains(#"[Link](<https://example.com/foo bar> "Hello \"World\"")"#))
         #expect(markdown.contains(#"![\_img\_ \*with\* \[alt\]](logo.png?\(query\))"#))
     }
+
+    #if canImport(WebKit)
+        @Test("Turndown initialization navigation is time-bounded")
+        func initializationNavigationIsTimeBounded() async {
+            let clock = ContinuousClock()
+            let start = clock.now
+            var delegate: InitializationNavigationDelegate?
+
+            do {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    delegate = InitializationNavigationDelegate(
+                        continuation: continuation,
+                        timeout: .milliseconds(10),
+                        onTimeout: {}
+                    )
+                }
+                Issue.record("Expected initialization timeout")
+            } catch {
+                #expect(error is DemarkError)
+            }
+
+            #expect(start.duration(to: clock.now) < .seconds(1))
+            _ = delegate
+        }
+    #endif
 }

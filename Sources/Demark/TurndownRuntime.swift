@@ -316,10 +316,16 @@ import os.log
 
             try await withTaskCancellationHandler {
                 try await withCheckedThrowingContinuation { continuation in
-                    let delegate = InitializationNavigationDelegate(continuation: continuation)
+                    let delegate = InitializationNavigationDelegate(
+                        continuation: continuation,
+                        onTimeout: { [weak webView] in webView?.stopLoading() }
+                    )
                     initializationDelegate = delegate
                     webView.navigationDelegate = delegate
-                    webView.loadHTMLString("<html><head></head><body></body></html>", baseURL: nil)
+                    guard webView.loadHTMLString("<html><head></head><body></body></html>", baseURL: nil) != nil else {
+                        delegate.failToStart()
+                        return
+                    }
                 }
             } onCancel: {
                 Task { @MainActor in
@@ -331,11 +337,27 @@ import os.log
     }
 
     @MainActor
-    private final class InitializationNavigationDelegate: NSObject, WKNavigationDelegate {
+    final class InitializationNavigationDelegate: NSObject, WKNavigationDelegate {
         private var continuation: CheckedContinuation<Void, Error>?
+        private var timeoutTask: Task<Void, Never>?
 
-        init(continuation: CheckedContinuation<Void, Error>) {
+        init(
+            continuation: CheckedContinuation<Void, Error>,
+            timeout: Duration = .seconds(5),
+            onTimeout: @escaping @MainActor @Sendable () -> Void
+        ) {
             self.continuation = continuation
+            super.init()
+            timeoutTask = Task { @MainActor [weak self] in
+                do {
+                    try await Task.sleep(for: timeout)
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled else { return }
+                onTimeout()
+                self?.complete(with: .failure(DemarkError.jsEnvironmentInitializationFailed))
+            }
         }
 
         func webView(_: WKWebView, didFinish _: WKNavigation!) {
@@ -350,6 +372,14 @@ import os.log
             complete(with: .failure(DemarkError.jsEnvironmentInitializationFailed))
         }
 
+        func webViewWebContentProcessDidTerminate(_: WKWebView) {
+            complete(with: .failure(DemarkError.jsEnvironmentInitializationFailed))
+        }
+
+        func failToStart() {
+            complete(with: .failure(DemarkError.jsEnvironmentInitializationFailed))
+        }
+
         func cancel() {
             complete(with: .failure(CancellationError()))
         }
@@ -357,6 +387,8 @@ import os.log
         private func complete(with result: Result<Void, Error>) {
             guard let continuation else { return }
             self.continuation = nil
+            timeoutTask?.cancel()
+            timeoutTask = nil
             continuation.resume(with: result)
         }
     }
