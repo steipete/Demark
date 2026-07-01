@@ -2,6 +2,8 @@ import Foundation
 import Testing
 @testable import Demark
 
+private let liveURLTestsEnabled = ProcessInfo.processInfo.environment["DEMARK_LIVE_TESTS"] == "1"
+
 @MainActor
 struct DemarkURLLoadingTests {
     // MARK: - Unit Tests: Invalid URL Schemes
@@ -146,8 +148,19 @@ struct DemarkURLLoadingTests {
 
 // MARK: - Integration Tests
 
+@Suite(.enabled(if: liveURLTestsEnabled, "Set DEMARK_LIVE_TESTS=1 to run live URL tests."))
 @MainActor
 struct DemarkURLLoadingIntegrationTests {
+    @Test("Mixed-case HTTPS scheme accepted")
+    func mixedCaseHTTPSSchemeAccepted() async throws {
+        let service = Demark()
+        let url = try #require(URL(string: "HTTPS://example.com"))
+
+        let markdown = try await service.convertToMarkdown(url: url)
+
+        #expect(markdown.contains("Example Domain"))
+    }
+
     @Test("Load example.com and convert to markdown")
     func loadExampleDotCom() async throws {
         let service = Demark()
@@ -242,6 +255,7 @@ struct DemarkURLLoadingIntegrationTests {
 
 // MARK: - Edge Case Tests
 
+@Suite(.enabled(if: liveURLTestsEnabled, "Set DEMARK_LIVE_TESTS=1 to run live URL tests."))
 @MainActor
 struct DemarkURLLoadingEdgeCaseTests {
     @Test("URL with query parameters")
@@ -342,6 +356,7 @@ struct DemarkURLLoadingEdgeCaseTests {
 
 // MARK: - Cancellation Tests
 
+@Suite(.enabled(if: liveURLTestsEnabled, "Set DEMARK_LIVE_TESTS=1 to run live URL tests."))
 @MainActor
 struct DemarkURLLoadingCancellationTests {
     @Test("Task cancellation stops loading")
@@ -379,6 +394,7 @@ struct DemarkURLLoadingCancellationTests {
 
 // MARK: - Concurrent Load Tests
 
+@Suite(.enabled(if: liveURLTestsEnabled, "Set DEMARK_LIVE_TESTS=1 to run live URL tests."))
 @MainActor
 struct DemarkURLLoadingConcurrencyTests {
     @Test("Concurrent URL loads don't cross-cancel")
