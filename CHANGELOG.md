@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [1.2.0] - 2026-08-02
 
 ### Added
 - URL conversion API: `convertToMarkdown(url:options:loadingOptions:)` loads pages in WKWebView, extracts rendered HTML, and converts it through the existing Markdown pipeline. Thanks @atacan.
