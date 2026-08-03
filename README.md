@@ -86,7 +86,7 @@ func convertArticle(at url: URL) async throws -> String {
 }
 ```
 
-URL conversion requires WebKit and network access. Loading options cover timeouts, an additional idle delay, CSS selection, and a custom user agent; [the usage guide](docs/usage.md#web-pages) has the details.
+URL conversion is not yet in a tagged release — until the next release, depend on `branch: "main"` to use it. It requires WebKit and network access. Loading options cover timeouts, an additional idle delay, CSS selection, and a custom user agent; [the usage guide](docs/usage.md#web-pages) has the details.
 
 ## Platform support
 

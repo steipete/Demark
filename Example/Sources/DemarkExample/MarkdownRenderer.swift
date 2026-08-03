@@ -38,24 +38,23 @@ struct MarkdownRenderer: View {
         }
     }
 
+    @ViewBuilder
     private func renderElement(_ element: MarkdownElement) -> some View {
-        Group {
-            switch element.type {
-            case let .heading(level):
-                renderHeading(element.content, level: level)
-            case .paragraph:
-                renderParagraph(element.content)
-            case let .list(isOrdered):
-                renderList(element.items, ordered: isOrdered)
-            case let .codeBlock(language):
-                renderCodeBlock(element.content, language: language)
-            case .blockquote:
-                renderBlockquote(element.content)
-            case .horizontalRule:
-                renderHorizontalRule()
-            case .table:
-                renderTable(element.tableData)
-            }
+        switch element.type {
+        case let .heading(level):
+            renderHeading(element.content, level: level)
+        case .paragraph:
+            renderParagraph(element.content)
+        case let .list(isOrdered):
+            renderList(element.items, ordered: isOrdered)
+        case let .codeBlock(language):
+            renderCodeBlock(element.content, language: language)
+        case .blockquote:
+            renderBlockquote(element.content)
+        case .horizontalRule:
+            renderHorizontalRule()
+        case .table:
+            renderTable(element.tableData)
         }
     }
 
@@ -143,25 +142,24 @@ struct MarkdownRenderer: View {
             .padding(.vertical, 16)
     }
 
+    @ViewBuilder
     private func renderTable(_ tableData: TableData?) -> some View {
-        Group {
-            if let table = tableData {
-                VStack(spacing: 0) {
-                    // Header
-                    if !table.headers.isEmpty {
-                        renderTableHeader(table.headers)
-                    }
-
-                    // Rows
-                    ForEach(Array(table.rows.enumerated()), id: \.offset) { _, row in
-                        renderTableRow(row)
-                    }
+        if let table = tableData {
+            VStack(spacing: 0) {
+                // Header
+                if !table.headers.isEmpty {
+                    renderTableHeader(table.headers)
                 }
-                .cornerRadius(8)
-            } else {
-                Text("Invalid table data")
-                    .foregroundColor(.secondary)
+
+                // Rows
+                ForEach(Array(table.rows.enumerated()), id: \.offset) { _, row in
+                    renderTableRow(row)
+                }
             }
+            .cornerRadius(8)
+        } else {
+            Text("Invalid table data")
+                .foregroundColor(.secondary)
         }
     }
 
