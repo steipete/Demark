@@ -108,16 +108,14 @@ Issues, feature requests, and pull requests are welcome. Keep changes focused an
 
 ## Development
 
-Run the same checks used by CI:
+Build and test the package:
 
 ```sh
 swift build
 swift test
-./scripts/lint.sh
-swift build --package-path Example
 ```
 
-The default tests do not access the network. URL-loading integration tests are opt-in with `DEMARK_LIVE_TESTS=1 swift test --filter DemarkURLLoading`.
+The default tests do not access the network. URL-loading integration tests are opt-in with `DEMARK_LIVE_TESTS=1 swift test --filter DemarkURLLoading`. CI also checks formatting and linting and builds the example app; [the release guide](docs/RELEASING.md) lists the full matrix.
 
 ## Credits
 
