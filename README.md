@@ -1,476 +1,126 @@
-# Demark 🧽 - Mark My Words, HTML to Markdown!
+# Demark 🧽 — Scrub HTML down to Markdown
 
-![DEMARK - HTML in → Markdown out ⚡](assets/banner.png)
+[![CI](https://img.shields.io/github/actions/workflow/status/steipete/Demark/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/steipete/Demark/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/steipete/Demark?style=flat-square)](https://github.com/steipete/Demark/releases/latest)
+[![Swift 6](https://img.shields.io/badge/Swift-6-orange?style=flat-square)](https://swift.org)
+[![Platforms](https://img.shields.io/badge/platforms-iOS%2016%20%7C%20macOS%2014%20%7C%20visionOS%201%20%7C%20watchOS%2010%20%7C%20tvOS%2017-lightgrey?style=flat-square)](Package.swift)
+[![License](https://img.shields.io/github/license/steipete/Demark?style=flat-square)](LICENSE)
 
-**The Swift package that turns down HTML and turns up Markdown – it's a markup markdown!**
+![Demark — HTML in, Markdown out](assets/banner.png)
 
-[![Swift 6](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
-[![Platforms](https://img.shields.io/badge/Platforms-iOS%20|%20macOS%20|%20visionOS%20|%20watchOS%20|%20tvOS-lightgrey.svg)](https://developer.apple.com/swift/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+Demark is a Swift package for converting HTML strings and rendered web pages to Markdown on Apple platforms. It uses Turndown.js in a `WKWebView` by default and includes an `html-to-md` engine backed by JavaScriptCore for simpler input.
 
-## Features
+## Install
 
-- 🌍 **Apple Platform Support**: Full runtime support on iOS, macOS, and visionOS, plus clear runtime errors on watchOS and tvOS where Apple does not ship the required WebKit/JavaScriptCore frameworks
-- 🎯 **WKWebView Integration**: Real browser DOM environment for accurate HTML parsing
-- ⚡ **Turndown.js Powered**: Industry-standard HTML to Markdown conversion engine
-- 🔒 **Swift 6 Ready**: Full concurrency support with strict checking enabled
-- ⚙️ **Highly Configurable**: Extensive formatting options for customized output
-- 📝 **CommonMark Compliant**: Standard Markdown output that works everywhere
-- 🚀 **Async/Await**: Modern Swift concurrency for smooth performance
-- 🎨 **Zero Dependencies**: Only requires WebKit framework
+In Xcode, choose **File → Add Package Dependencies** and enter:
 
-## Quick Start
-
-```swift
-import Demark
-
-@MainActor
-func convertHTML() async throws {
-    let demark = Demark()
-    let html = "<h1>Hello World</h1><p>This is <strong>bold</strong> text.</p>"
-    let markdown = try await demark.convertToMarkdown(html)
-    print(markdown)
-    // Output: # Hello World
-    //
-    // This is **bold** text.
-}
-```
-
-## Conversion Engines
-
-Demark provides two HTML to Markdown conversion engines, each with different trade-offs:
-
-### 1. Turndown.js (Default) - Full-Featured DOM-Based Conversion
-
-**How it works**: Uses WKWebView to load Turndown.js in a real browser environment with full DOM parsing.
-
-**Advantages**:
-- 🎯 **Most accurate conversion**: Real browser DOM parsing handles complex/malformed HTML
-- 🛡️ **Battle-tested**: Turndown.js is the industry standard used by millions
-- ⚙️ **Full configuration options**: Supports all formatting styles (ATX/Setext headings, code block styles)
-- 🌐 **Handles any HTML**: Processes JavaScript-rendered content, inline styles, complex nesting
-
-**Disadvantages**:
-- 🐌 **Slower performance**: ~100ms first conversion (WebView setup), ~10-50ms subsequent
-- 💾 **Higher memory usage**: WKWebView has significant overhead
-- 🧵 **Main thread only**: WebView requires main thread execution
-
-**When to use**:
-- Converting complex HTML from websites or CMSs
-- Need maximum compatibility and accuracy
-- Processing user-generated or untrusted HTML
-- Require full configuration options
-
-### 2. html-to-md - Lightweight JavaScript Engine
-
-**How it works**: Uses JavaScriptCore to run html-to-md directly without WebView overhead.
-
-**Advantages**:
-- ⚡ **Much faster**: ~5-10ms per conversion (10x faster than Turndown)
-- 💾 **Lower memory footprint**: No WebView overhead
-- 🧵 **Background thread capable**: Can run on any thread via serial queue
-- 🔋 **Better for batch processing**: Ideal for converting many documents
-
-**Disadvantages**:
-- 📉 **Less accurate**: String-based parsing may struggle with complex HTML
-- ⚙️ **Limited configuration**: Fewer formatting options available
-- 🚫 **No DOM environment**: Cannot handle JavaScript-rendered content
-- 🐛 **Less mature**: Newer library, may have edge cases
-
-**When to use**:
-- High-performance requirements or batch conversions
-- Simple, well-formed HTML content
-- Memory-constrained environments and widgets
-- Background processing needs
-
-### Usage Example
-
-```swift
-// Using Turndown (default)
-let options = DemarkOptions(
-    engine: .turndown,  // Full-featured, most accurate
-    headingStyle: .atx,
-    bulletListMarker: "-"
-)
-
-// Using html-to-md for performance
-let fastOptions = DemarkOptions(
-    engine: .htmlToMd  // Fast, lightweight
-    // Note: Some options like headingStyle are ignored with html-to-md
-)
-
-let markdown = try await demark.convertToMarkdown(html, options: fastOptions)
-```
-
-### Performance Comparison
-
-| Engine | First Conversion | Subsequent | Memory | Thread Safety |
-|--------|-----------------|------------|---------|---------------|
-| Turndown.js | ~100ms | ~10-50ms | ~20MB | Main thread only |
-| html-to-md | ~5-10ms | ~5-10ms | ~5MB | Any thread |
-
-### Recommendation
-
-- **Start with Turndown.js** (default) for maximum compatibility
-- **Switch to html-to-md** only if you need the performance boost and your HTML is simple
-- **Test both** with your actual content to ensure quality meets your needs
-
-### 🎯 Try the Example App
-
-Want to see Demark in action? Check out the comprehensive example app:
-
-```bash
-# Quick start - run the helper script
-./run-example.sh
-
-# Or run manually
-cd Example
-swift run DemarkExample
-```
-
-The example app provides a dual-pane interface where you can input HTML on the left and see both the generated Markdown source and rendered output on the right. Perfect for testing and understanding Demark's capabilities!
-
-## Requirements
-
-- **Swift 6.0+**
-- **iOS 16.0+** / **macOS 14.0+** / **visionOS 1.0+**
-- **WebKit framework**
-- `html-to-md` also requires JavaScriptCore.
-- On platforms where WebKit or JavaScriptCore are unavailable, Demark compiles and throws `DemarkError.runtimeUnavailable` for the affected engine/API.
-
-## Installation
-
-### Swift Package Manager
-
-Add Demark to your project using Swift Package Manager. In Xcode, go to **File > Add Package Dependencies** and enter:
-
-```
+```text
 https://github.com/steipete/Demark.git
 ```
 
-Or add it to your `Package.swift`:
+For a `Package.swift` manifest, add the package and product dependency:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/steipete/Demark.git", from: "1.1.0")
+    .package(url: "https://github.com/steipete/Demark.git", from: "1.1.0"),
 ]
-```
 
-Then add it to your target:
-
-```swift
 .target(
     name: "YourTarget",
-    dependencies: ["Demark"]
+    dependencies: [.product(name: "Demark", package: "Demark")]
 )
 ```
 
-## Usage
+Demark requires Swift 6 and has no external Swift Package dependencies.
 
-### Basic Conversion
+## Quick start
+
+Call Demark from an async main-actor context:
 
 ```swift
 import Demark
 
 @MainActor
-class ContentConverter {
-    private let demark = Demark()
-    
-    func convertContent(_ html: String) async throws -> String {
-        return try await demark.convertToMarkdown(html)
-    }
+func convert(_ html: String) async throws -> String {
+    try await Demark().convertToMarkdown(html)
 }
+
+print(try await convert("<h1>Hello</h1><p>This is <strong>bold</strong>.</p>"))
 ```
 
-### Custom Configuration
+Output:
 
-Demark supports extensive customization through `DemarkOptions`:
+```markdown
+# Hello
 
-```swift
-let options = DemarkOptions(
-    headingStyle: .setext,      // Use underline-style headings
-    bulletListMarker: "*",      // Use asterisks for bullets  
-    codeBlockStyle: .fenced     // Use fenced code blocks
-)
-
-let markdown = try await demark.convertToMarkdown(html, options: options)
+This is **bold**.
 ```
 
-### Platform-Specific Usage
+## Choose an engine
 
-#### iOS App Example
+Demark exposes two bundled conversion engines:
+
+| Engine | Runtime | Use it for |
+|---|---|---|
+| `.turndown` (default) | WebKit and a browser DOM | Complex or malformed HTML and configurable heading/code styles |
+| `.htmlToMd` | JavaScriptCore on an internal serial queue | Simple, well-formed HTML without a web view |
+
+The public `Demark` API is main-actor isolated. If Turndown cannot complete a conversion, the default path retries the input with `html-to-md`. Both engines support custom bullet markers, skipped tags, and ignored tags; some formatting options are engine-specific.
+
+See [Using Demark](docs/usage.md) for the complete option table, engine behavior, and error model.
+
+## Convert a web page
+
+Demark can load an HTTP or HTTPS URL in an ephemeral `WKWebView`, wait for the rendered document, and convert either the whole page or a selected element:
 
 ```swift
-import SwiftUI
 import Demark
+import Foundation
 
-struct ContentView: View {
-    @State private var markdown = ""
-    private let demark = Demark()
-    
-    var body: some View {
-        VStack {
-            Text(markdown)
-                .padding()
-            
-            Button("Convert HTML") {
-                Task { @MainActor in
-                    let html = "<h2>iOS Example</h2><p>Converting on iOS!</p>"
-                    markdown = try await demark.convertToMarkdown(html)
-                }
-            }
-        }
-    }
+@MainActor
+func convertArticle(at url: URL) async throws -> String {
+    try await Demark().convertToMarkdown(
+        url: url,
+        loadingOptions: URLLoadingOptions(contentSelector: "article")
+    )
 }
 ```
 
-#### macOS App Example
+URL conversion is not yet in a tagged release — until the next release, depend on `branch: "main"` to use it. It requires WebKit and network access. Loading options cover timeouts, an additional idle delay, CSS selection, and a custom user agent; [the usage guide](docs/usage.md#web-pages) has the details.
 
-```swift
-import AppKit
-import Demark
+## Platform support
 
-class DocumentController: NSDocument {
-    private let demark = Demark()
-    
-    @MainActor
-    func convertHTMLDocument(_ html: String) async throws -> String {
-        let options = DemarkOptions(
-            headingStyle: .atx,
-            bulletListMarker: "-",
-            codeBlockStyle: .fenced
-        )
-        return try await demark.convertToMarkdown(html, options: options)
-    }
-}
-```
+The package manifest declares these deployment targets:
 
-## Configuration Options
+| Platform | Minimum | Conversion availability |
+|---|---:|---|
+| macOS | 14 | WebKit and JavaScriptCore engines |
+| iOS | 16 | WebKit and JavaScriptCore engines |
+| visionOS | 1 | WebKit and JavaScriptCore engines |
+| watchOS | 10 | Package compiles; an unavailable engine throws `DemarkError.runtimeUnavailable` |
+| tvOS | 17 | Package compiles; an unavailable engine throws `DemarkError.runtimeUnavailable` |
 
-### DemarkOptions
-
-Configure how HTML elements are converted to Markdown:
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `headingStyle` | `DemarkHeadingStyle` | `.atx` | Heading format (ATX `#` or Setext underline) |
-| `bulletListMarker` | `String` | `"-"` | Character for unordered lists (`"-"`, `"*"`, or `"+"`) |
-| `codeBlockStyle` | `DemarkCodeBlockStyle` | `.fenced` | Code block format (fenced ``` or indented) |
-
-### Heading Styles
-
-```swift
-// ATX style (default): # Heading 1, ## Heading 2
-let atxOptions = DemarkOptions(headingStyle: .atx)
-
-// Setext style: Heading 1\n=========, Heading 2\n---------  
-let setextOptions = DemarkOptions(headingStyle: .setext)
-```
-
-### List Markers
-
-```swift
-let dashOptions = DemarkOptions(bulletListMarker: "-")    // - Item
-let starOptions = DemarkOptions(bulletListMarker: "*")    // * Item  
-let plusOptions = DemarkOptions(bulletListMarker: "+")    // + Item
-```
-
-### Code Block Styles
-
-```swift
-// Fenced (default): ```\ncode\n```
-let fencedOptions = DemarkOptions(codeBlockStyle: .fenced)
-
-// Indented:     code
-let indentedOptions = DemarkOptions(codeBlockStyle: .indented)
-```
-
-## Supported HTML Elements
-
-Demark handles all standard HTML elements that Turndown.js supports:
-
-- **Headings**: `<h1>` through `<h6>`
-- **Text formatting**: `<strong>`, `<em>`, `<code>`, `<del>`, `<ins>`, `<sup>`, `<sub>`
-- **Lists**: `<ul>`, `<ol>`, `<li>` with proper nesting
-- **Links and images**: `<a>`, `<img>` with attributes
-- **Code blocks**: `<pre>`, `<code>` with language detection  
-- **Tables**: `<table>`, `<tr>`, `<td>`, `<th>` (GitHub Flavored Markdown)
-- **Block elements**: `<div>`, `<p>`, `<blockquote>`, `<hr>`
-- **Custom elements**: `<del>`, `<ins>`, `<sup>`, `<sub>` are preserved
-
-## Error Handling
-
-Demark provides comprehensive error handling with detailed error messages:
-
-```swift
-do {
-    let markdown = try await demark.convertToMarkdown(html)
-    // Success!
-} catch DemarkError.turndownLibraryNotFound {
-    // JavaScript library not found in bundle
-} catch DemarkError.conversionFailed {  
-    // HTML conversion failed
-} catch DemarkError.invalidInput(let details) {
-    // Invalid HTML input: details
-} catch DemarkError.webViewInitializationFailed {
-    // WKWebView couldn't be created
-} catch {
-    // Other errors
-    print("Conversion error: \(error.localizedDescription)")
-}
-```
-
-## Thread Safety & Performance
-
-### Main Actor Requirement
-
-⚠️ **Important**: Demark requires main thread execution due to WKWebView constraints:
-
-```swift
-// ✅ Correct - on main thread
-@MainActor  
-func convertHTML() async throws -> String {
-    let demark = Demark()
-    return try await demark.convertToMarkdown(html)
-}
-
-// ✅ Also correct - dispatch to main
-func convertHTML() async throws -> String {
-    return try await MainActor.run {
-        let demark = Demark()
-        return try await demark.convertToMarkdown(html)
-    }
-}
-```
-
-### Performance Characteristics
-
-- **First Conversion**: ~100ms (includes one-time WKWebView setup)
-- **Subsequent Conversions**: ~10-50ms (reuses WebView instance)
-- **Memory Efficient**: Single WebView per Demark instance
-- **Platform Aware**: Uses the best available Apple JavaScript/WebKit runtime and reports unsupported runtimes clearly
-
-## Platform Support Details
-
-### macOS (14.0+)
-- Full functionality with desktop optimizations
-- Enhanced JavaScript execution environment
-- Optimized for large document processing
-
-### iOS (16.0+) & visionOS (1.0+)
-- Full functionality with mobile/spatial optimizations  
-- Respects system memory constraints
-- Optimized for touch/gesture interfaces
-
-### watchOS (10.0+) & tvOS (17.0+)
-- The package compiles, but conversion depends on Apple framework availability.
-- Turndown and URL conversion require WebKit and throw `DemarkError.runtimeUnavailable` where WebKit is absent.
-- html-to-md requires JavaScriptCore and throws `DemarkError.runtimeUnavailable` where JavaScriptCore is absent.
-
-## Examples
-
-### Converting Blog Content
-
-```swift
-let blogHTML = """
-<article>
-    <h1>My Blog Post</h1>
-    <p>Welcome to my <strong>awesome</strong> blog!</p>
-    <ul>
-        <li>First point</li>
-        <li>Second point with <a href="https://example.com">link</a></li>
-    </ul>
-    <blockquote>
-        <p>This is a quote from someone famous.</p>
-    </blockquote>
-</article>
-"""
-
-let markdown = try await demark.convertToMarkdown(blogHTML)
-```
-
-### Converting Documentation
-
-```swift
-let docHTML = """
-<div class="documentation">
-    <h2>API Reference</h2>
-    <p>The <code>convert</code> function takes the following parameters:</p>
-    <pre><code class="swift">
-func convert(_ html: String) async throws -> String
-    </code></pre>
-</div>
-"""
-
-let options = DemarkOptions(
-    headingStyle: .atx,
-    codeBlockStyle: .fenced
-)
-
-let markdown = try await demark.convertToMarkdown(docHTML, options: options)
-```
+The [example app](Example/README.md) provides a native macOS/iOS interface for comparing both engines and their output.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues, feature requests, and pull requests.
+Issues, feature requests, and pull requests are welcome. Keep changes focused and run the development checks before submitting a pull request.
 
-### Development Setup
+## Development
 
-1. Clone the repository
-2. Open `Package.swift` in Xcode
-3. Run tests with `⌘+U`
-4. Make your changes
-5. Ensure all tests pass
-6. Submit a pull request
+Build and test the package:
 
-### Running Tests
-
-```bash
+```sh
+swift build
 swift test
 ```
 
-The default suite is deterministic and does not access the network. Run the opt-in URL loading tests against live sites with:
-
-```bash
-DEMARK_LIVE_TESTS=1 swift test --filter DemarkURLLoading
-```
-
-### Code Quality
-
-This project uses SwiftLint and SwiftFormat to maintain code quality:
-
-```bash
-# Install tools (if not already installed)
-brew install swiftlint swiftformat
-
-# Run linting and formatting checks
-./scripts/lint.sh
-
-# Auto-fix formatting issues
-./scripts/swiftformat.sh
-
-# Auto-fix some lint issues
-./scripts/swiftlint.sh --fix
-```
-
-## License
-
-Demark is available under the MIT license. See the [LICENSE](LICENSE) file for more info.
+The default tests do not access the network. URL-loading integration tests are opt-in with `DEMARK_LIVE_TESTS=1 swift test --filter DemarkURLLoading`. CI also checks formatting and linting and builds the example app; [the release guide](docs/RELEASING.md) lists the full matrix.
 
 ## Credits
 
-- **Turndown.js**: The powerful HTML to Markdown conversion engine by [Dom Christie](https://github.com/mixmark-io/turndown)
-- **Swift Community**: For the amazing Swift language and ecosystem
-- **WebKit Team**: For providing the robust WKWebView framework
+Demark bundles [Turndown.js](https://github.com/mixmark-io/turndown) by Dom Christie and [html-to-md](https://github.com/stonehank/html-to-md). Thanks also to the Swift community and WebKit team for the language and platform runtimes the package builds on.
 
-## Alternatives
+## License
 
-If Demark doesn't fit your needs, consider these alternatives:
-
-- **Server-side conversion**: Use Turndown.js directly in Node.js
-- **Pure Swift**: Implement a custom HTML parser (more complex)
-- **Web-based**: Use a web service for conversion (requires network)
-
----
-
-License: MIT • Peter Steinberger ([steipete](https://twitter.com/steipete))
+Demark is available under the [MIT License](LICENSE). Copyright Peter Steinberger.
