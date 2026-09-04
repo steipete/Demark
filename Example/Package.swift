@@ -16,7 +16,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: ".."),
+        .package(name: "Demark", path: ".."),
     ],
     targets: [
         .executableTarget(

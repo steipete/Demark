@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+- Preserve literal bullet markers inside fenced code containing shorter fences, mixed fence markers, or indented fence-like text, and continue normalizing lists after the closing fence.
+- Build the example package from checkouts with directory names other than `Demark` by naming its local dependency explicitly.
+
 ## [1.2.0] - 2026-08-02
 
 ### Added
