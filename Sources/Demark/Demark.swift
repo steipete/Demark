@@ -90,18 +90,31 @@ final class ConversionRuntime {
             return markdown
         }
 
-        var inFencedCodeBlock = false
+        var openFence: (marker: Character, length: Int)?
         let lines = markdown.split(separator: "\n", omittingEmptySubsequences: false)
         let normalized = lines.map { line -> String in
             let rawLine = String(line)
 
-            let trimmedLeft = rawLine.drop(while: { $0 == " " || $0 == "\t" })
-            if trimmedLeft.hasPrefix("```") || trimmedLeft.hasPrefix("~~~") {
-                inFencedCodeBlock.toggle()
-                return rawLine
+            let indentation = rawLine.prefix(while: { $0 == " " }).count
+            let trimmedLeft = rawLine.dropFirst(indentation)
+            if indentation <= 3, let marker = trimmedLeft.first, marker == "`" || marker == "~" {
+                let length = trimmedLeft.prefix(while: { $0 == marker }).count
+                let suffix = trimmedLeft.dropFirst(length)
+                if length >= 3 {
+                    if let fence = openFence {
+                        // Code may contain shorter fences or the other marker without closing the block.
+                        let hasOnlyTrailingWhitespace = suffix.allSatisfy { $0 == " " || $0 == "\t" }
+                        if marker == fence.marker, length >= fence.length, hasOnlyTrailingWhitespace {
+                            openFence = nil
+                        }
+                    } else if marker == "~" || !suffix.contains("`") {
+                        openFence = (marker, length)
+                    }
+                    return rawLine
+                }
             }
 
-            guard !inFencedCodeBlock else {
+            guard openFence == nil else {
                 return rawLine
             }
 

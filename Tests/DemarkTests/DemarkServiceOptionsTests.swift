@@ -33,7 +33,7 @@ struct DemarkServiceOptionsTests {
     @Test("Bullet normalization does not touch fenced code blocks")
     func bulletNormalizationSkipsFencedCodeBlocks() async throws {
         let service = Demark()
-        let html = "<pre><code>```\\n* not a list\\n```</code></pre>"
+        let html = "<pre><code>* not a list\n+ also code</code></pre>"
 
         let markdown = try await service.convertToMarkdown(
             html,
@@ -41,6 +41,41 @@ struct DemarkServiceOptionsTests {
         )
 
         #expect(markdown.contains("* not a list"))
+        #expect(markdown.contains("+ also code"))
+    }
+
+    @Test("Fence-like code content does not end bullet protection", arguments: [
+        "```", "~~~", "``` text", " ``` text", "    ```", "\t```",
+    ])
+    func bulletNormalizationPreservesFenceLikeCode(_ innerFence: String) async throws {
+        let service = Demark()
+        let code = "\(innerFence)\n* literal bullet\n+ another literal"
+        let html = "<pre><code>\(code)</code></pre><ul><li>Real list</li></ul>"
+
+        let markdown = try await service.convertToMarkdown(
+            html,
+            options: DemarkOptions(bulletListMarker: "-")
+        )
+
+        #expect(markdown.contains(code))
+        #expect(markdown.hasSuffix("- Real list"))
+    }
+
+    @Test("Code nested in lists preserves literal bullets", arguments: [1, 2, 3])
+    func bulletNormalizationPreservesNestedCode(_ depth: Int) async throws {
+        let service = Demark()
+        var html = "<pre><code>* literal bullet\n+ another literal</code></pre>"
+        for _ in 0 ..< depth {
+            html = "<ul><li><p>Parent</p>\(html)</li></ul>"
+        }
+        html += "<p>After code</p><ul><li>Real list</li></ul>"
+
+        let markdown = try await service.convertToMarkdown(html)
+        let lines = markdown.split(separator: "\n").map { $0.drop(while: { $0 == " " }) }
+
+        #expect(lines.contains("* literal bullet"))
+        #expect(lines.contains("+ another literal"))
+        #expect(markdown.hasSuffix("- Real list"))
     }
 
     @Test("Custom heading style is accepted")
