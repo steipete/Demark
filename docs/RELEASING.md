@@ -1,6 +1,6 @@
 # Releasing
 
-Demark uses SemVer tags (`1.0.1`) and GitHub Releases.
+Demark uses SemVer tags (`1.2.1`, without a `v` prefix) and GitHub Releases.
 
 ## Release Checklist
 
@@ -12,11 +12,11 @@ Demark uses SemVer tags (`1.0.1`) and GitHub Releases.
    - `(cd Example && swift build -v)`
 3. Commit release prep changes.
 4. Create an annotated tag:
-   - `git tag -a 1.0.1 -m "Release 1.0.1"`
+   - `git tag -a 1.2.1 -m "Release 1.2.1"`
 5. Push `main` + tags:
    - `git push origin main --tags`
 6. Create a GitHub Release:
-   - `gh release create 1.0.1 --title "1.0.1" --notes-file /tmp/demark-1.0.1.md`
+   - `gh release create 1.2.1 --title "1.2.1" --notes-file "$TMPDIR/demark-1.2.1.md"`
 
 ## Notes
 

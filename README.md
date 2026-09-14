@@ -22,7 +22,7 @@ For a `Package.swift` manifest, add the package and product dependency:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/steipete/Demark.git", from: "1.1.0"),
+    .package(url: "https://github.com/steipete/Demark.git", from: "1.2.1"),
 ]
 
 .target(

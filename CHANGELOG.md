@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## [1.2.1] - 2026-09-13
+
+**Highlights:** Literal bullet markers are preserved inside fenced code, including nested fence-like text.
 
 ### Fixed
 - Preserve literal bullet markers inside fenced code containing shorter fences, mixed fence markers, or indented fence-like text, and continue normalizing lists after the closing fence.
