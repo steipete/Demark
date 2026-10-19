@@ -6,6 +6,9 @@ GitHub Releases with the exact dated changelog section, frozen-commit source ZIP
 and tar archives, an asset inventory, and SHA-256 checksums. There is no npm,
 Homebrew binary, or Sparkle publication.
 
+CI and release verification run on `xcode-27` with Xcode 27, keeping the package
+and example's macOS 14 deployment target explicit.
+
 ## Prepare and rehearse
 
 Update `VERSION` and finalize exactly one `## X.Y.Z - YYYY-MM-DD` (brackets around

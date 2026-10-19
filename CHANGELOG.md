@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Move CI and release verification to Xcode 27 runners while retaining macOS 14 and the existing Apple platform minimums.
+
 ## [1.2.1] - 2026-09-13
 
 **Highlights:** Literal bullet markers are preserved inside fenced code, including nested fence-like text.
