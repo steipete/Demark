@@ -91,17 +91,31 @@ struct DemarkTests {
         #expect(options.emptyTags == ["br"])
     }
 
-    @Test("skip tags are JSON, not a quoted JavaScript string")
-    func skipTagsAreJSON() throws {
-        let runtime = TurndownRuntime()
-        let script = try runtime.buildSkipTagsJS(["div", "']); return 'owned'; //"])
-        #expect(script.hasPrefix("turndownService.keep("))
-        #expect(script.hasSuffix(");"))
-        let json = String(script.dropFirst("turndownService.keep(".count).dropLast(2))
-        let parsed = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String]
-        #expect(parsed == ["div", "']); return 'owned'; //"])
-        #expect(!script.contains("keep(['"))
-    }
+    #if canImport(WebKit)
+        @Test("skip tags are JSON, not a quoted JavaScript string")
+        func skipTagsAreJSON() throws {
+            let runtime = TurndownRuntime()
+            let script = try runtime.buildSkipTagsJS(["div", "']); return 'owned'; //"])
+            #expect(script.hasPrefix("turndownService.keep("))
+            #expect(script.hasSuffix(");"))
+            let json = String(script.dropFirst("turndownService.keep(".count).dropLast(2))
+            let parsed = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String]
+            #expect(parsed == ["div", "']); return 'owned'; //"])
+            #expect(!script.contains("keep(['"))
+        }
+
+        @Test("a quoted skip tag does not replace the converted document")
+        func quotedSkipTagDoesNotReplaceDocument() async throws {
+            let demark = Demark()
+            let options = DemarkOptions(
+                engine: .turndown,
+                skipTags: ["']); return 'owned'; //"]
+            )
+            let markdown = try await demark.convertToMarkdown("<p>Hello</p>", options: options)
+            #expect(markdown.contains("Hello"))
+            #expect(markdown.contains("owned") == false)
+        }
+    #endif
 
     @Test("Empty HTML input")
     func emptyHTMLInput() async throws {
