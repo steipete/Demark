@@ -5,6 +5,7 @@
 // Created by Peter Steinberger on 12/28/2025.
 //
 
+import Foundation
 import Testing
 @testable import Demark
 
@@ -88,6 +89,18 @@ struct DemarkTests {
         #expect(options.skipTags == ["div", "span"])
         #expect(options.ignoreTags == ["script", "style"])
         #expect(options.emptyTags == ["br"])
+    }
+
+    @Test("skip tags are JSON, not a quoted JavaScript string")
+    func skipTagsAreJSON() throws {
+        let runtime = TurndownRuntime()
+        let script = try runtime.buildSkipTagsJS(["div", "']); return 'owned'; //"])
+        #expect(script.hasPrefix("turndownService.keep("))
+        #expect(script.hasSuffix(");"))
+        let json = String(script.dropFirst("turndownService.keep(".count).dropLast(2))
+        let parsed = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String]
+        #expect(parsed == ["div", "']); return 'owned'; //"])
+        #expect(!script.contains("keep(['"))
     }
 
     @Test("Empty HTML input")

@@ -44,7 +44,7 @@ import os.log
 
             let optionsJSON = try buildOptionsJSON(options)
             let escapedHTML = escapeHTML(html)
-            let skipTagsJS = buildSkipTagsJS(options.skipTags)
+            let skipTagsJS = try buildSkipTagsJS(options.skipTags)
             let ignoreTagsJS = try buildIgnoreTagsJS(options.ignoreTags)
             let jsCode = buildConversionScript(
                 escapedHTML: escapedHTML,
@@ -170,10 +170,11 @@ import os.log
                 .replacingOccurrences(of: "\t", with: "\\t")
         }
 
-        private func buildSkipTagsJS(_ skipTags: [String]) -> String {
+        func buildSkipTagsJS(_ skipTags: [String]) throws -> String {
             guard !skipTags.isEmpty else { return "" }
-            let keepCalls = skipTags.map { "turndownService.keep(['\($0)']);" }
-            return keepCalls.joined(separator: "\n")
+            let data = try JSONSerialization.data(withJSONObject: skipTags)
+            let json = String(data: data, encoding: .utf8) ?? "[]"
+            return "turndownService.keep(\(json));"
         }
 
         private func buildIgnoreTagsJS(_ ignoreTags: [String]) throws -> String {
