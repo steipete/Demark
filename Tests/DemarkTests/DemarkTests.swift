@@ -99,6 +99,11 @@ struct DemarkTests {
             weakRuntime = runtime
             _ = try await runtime.convert("<p>Hi</p>", options: DemarkOptions())
         }
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .milliseconds(500))
+        while weakRuntime != nil, clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         #expect(weakRuntime == nil)
     }
 
