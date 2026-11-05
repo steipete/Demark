@@ -5,6 +5,7 @@
 // Created by Peter Steinberger on 12/28/2025.
 //
 
+import Foundation
 import Testing
 @testable import Demark
 
@@ -88,6 +89,17 @@ struct DemarkTests {
         #expect(options.skipTags == ["div", "span"])
         #expect(options.ignoreTags == ["script", "style"])
         #expect(options.emptyTags == ["br"])
+    }
+
+    @Test("html-to-md runtime is released after conversion")
+    func htmlToMdRuntimeIsReleased() async throws {
+        weak var weakRuntime: HTMLToMdRuntime?
+        do {
+            let runtime = HTMLToMdRuntime()
+            weakRuntime = runtime
+            _ = try await runtime.convert("<p>Hi</p>", options: DemarkOptions())
+        }
+        #expect(weakRuntime == nil)
     }
 
     @Test("Empty HTML input")
