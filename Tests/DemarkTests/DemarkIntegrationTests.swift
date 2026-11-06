@@ -70,5 +70,77 @@ struct DemarkIntegrationTests {
             #expect(titledMarkdown.contains("Tail"))
             #expect(titledMarkdown.contains("x-turndown"))
         }
+
+        @Test("a false raw-text end tag does not drop earlier characters")
+        func falseRawTextEndTagKeepsEarlierCharacters() async throws {
+            let service = Demark()
+            let options = DemarkOptions(engine: .turndown)
+
+            let falseEnd = try await service.convertToMarkdown(
+                "<title>alpha</titleX>beta</title><p>Tail</p>",
+                options: options
+            )
+            #expect(falseEnd.contains("alpha"))
+            #expect(falseEnd.contains("beta"))
+            #expect(falseEnd.contains("Tail"))
+
+            let rawXmp = try await service.convertToMarkdown(
+                "<xmp>literal </x-turndown> value</xmp><p>Tail</p>",
+                options: options
+            )
+            #expect(rawXmp.contains("literal"))
+            #expect(rawXmp.contains("value"))
+            #expect(rawXmp.contains("x-turndown"))
+            #expect(rawXmp.contains("Tail"))
+        }
+
+        @Test("turndown closer scan follows WebKit tag and comment ends")
+        func turndownCloserScanFollowsWebKitEnds() async throws {
+            let service = Demark()
+            let options = DemarkOptions(engine: .turndown)
+
+            let apostrophe = try await service.convertToMarkdown(
+                "<p>Head</p><div data=foo'></div></x-turndown><p>Tail</p>",
+                options: options
+            )
+            #expect(apostrophe.contains("Head"))
+            #expect(apostrophe.contains("Tail"))
+
+            let strayQuote = try await service.convertToMarkdown(
+                "<p>Head</p><div data=foo\"></div></x-turndown><p>Tail</p>",
+                options: options
+            )
+            #expect(strayQuote.contains("Head"))
+            #expect(strayQuote.contains("Tail"))
+
+            let quotedClose = try await service.convertToMarkdown(
+                "<p>Head</p></x-turndown title=\">\"><p>Tail</p>",
+                options: options
+            )
+            #expect(quotedClose.contains("Head"))
+            #expect(quotedClose.contains("Tail"))
+            #expect(!quotedClose.contains("\">"))
+
+            let carriageReturn = try await service.convertToMarkdown(
+                "<p>Head</p></x-turndown\r\n><p>Tail</p>",
+                options: options
+            )
+            #expect(carriageReturn.contains("Head"))
+            #expect(carriageReturn.contains("Tail"))
+
+            let commentBang = try await service.convertToMarkdown(
+                "<p>Head</p><!-- --!></x-turndown><p>Tail</p>",
+                options: options
+            )
+            #expect(commentBang.contains("Head"))
+            #expect(commentBang.contains("Tail"))
+
+            let emptyComment = try await service.convertToMarkdown(
+                "<p>Head</p><!--></x-turndown><p>Tail</p>",
+                options: options
+            )
+            #expect(emptyComment.contains("Head"))
+            #expect(emptyComment.contains("Tail"))
+        }
     #endif
 }

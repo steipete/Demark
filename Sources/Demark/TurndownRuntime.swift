@@ -197,17 +197,16 @@ import os.log
         private func skippedTurndownRootCloser(_ html: String, from index: String.Index) -> String.Index? {
             let token = "</x-turndown"
             guard let tokenEnd = html.index(index, offsetBy: token.count, limitedBy: html.endIndex),
-                  html[index ..< tokenEnd].lowercased() == token
-            else { return nil }
-            return closingAngleAfterTagName(html, from: tokenEnd)
+                  html[index ..< tokenEnd].lowercased() == token,
+                  isTagNameBoundary(html, at: tokenEnd) else { return nil }
+            return endOfTag(html, from: index)
         }
 
         private func appendMarkup(_ html: String, from index: String.Index, into output: inout String) -> String.Index {
             if html[index...].hasPrefix("<!--") {
-                let searchFrom = html.index(index, offsetBy: 4)
-                if let end = html.range(of: "-->", range: searchFrom ..< html.endIndex) {
-                    output.append(contentsOf: html[index ..< end.upperBound])
-                    return end.upperBound
+                if let end = commentEnd(in: html, from: index) {
+                    output.append(contentsOf: html[index ..< end])
+                    return end
                 }
                 output.append(contentsOf: html[index...])
                 return html.endIndex
@@ -253,37 +252,121 @@ import os.log
                     break
                 }
                 if isTagNameBoundary(html, at: match.upperBound) {
-                    output.append(contentsOf: html[cursor ..< match.lowerBound])
+                    output.append(contentsOf: html[index ..< match.lowerBound])
                     return appendTag(html, from: match.lowerBound, into: &output)
                 }
-                cursor = match.upperBound
+                guard let next = html.index(match.lowerBound, offsetBy: 1, limitedBy: html.endIndex) else {
+                    break
+                }
+                cursor = next
             }
             output.append(contentsOf: html[index...])
             return html.endIndex
         }
 
         private func appendTag(_ html: String, from index: String.Index, into output: inout String) -> String.Index {
+            guard let end = endOfTag(html, from: index) else {
+                output.append(contentsOf: html[index...])
+                return html.endIndex
+            }
+            output.append(contentsOf: html[index ..< end])
+            return end
+        }
+
+        private func isAttributeQuote(_ character: Character) -> Bool {
+            character == "\"" || character == "'"
+        }
+
+        /// Index just after the tag's closing `>`.
+        /// A quote starts a value only after `=`. An unquoted value keeps `"` and `'` as text, and still ends at `>`.
+        private func endOfTag(_ html: String, from index: String.Index) -> String.Index? {
             var cursor = index
             var quote: Character?
+            var afterEquals = false
+            var unquotedValue = false
+
             while cursor < html.endIndex {
                 let character = html[cursor]
-                output.append(character)
                 cursor = html.index(after: cursor)
+
                 if let activeQuote = quote {
                     if character == activeQuote {
                         quote = nil
                     }
                     continue
                 }
-                if character == "\"" || character == "'" {
-                    quote = character
+
+                if afterEquals {
+                    if isHTMLWhitespace(character) {
+                        continue
+                    }
+                    afterEquals = false
+                    if isAttributeQuote(character) {
+                        quote = character
+                        continue
+                    }
+                    unquotedValue = true
+                }
+
+                if unquotedValue {
+                    if isHTMLWhitespace(character) {
+                        unquotedValue = false
+                        continue
+                    }
+                    if character == ">" {
+                        return cursor
+                    }
+                    continue
+                }
+
+                if character == "=" {
+                    afterEquals = true
                     continue
                 }
                 if character == ">" {
                     return cursor
                 }
             }
-            return cursor
+            return nil
+        }
+
+        /// WebKit ends a comment at `-->`, `--!>`, an empty `<!-->`, or `<!--->`.
+        private func commentEnd(in html: String, from index: String.Index) -> String.Index? {
+            let marker = "<!--"
+            guard html[index...].hasPrefix(marker),
+                  let body = html.index(index, offsetBy: marker.count, limitedBy: html.endIndex)
+            else { return nil }
+
+            if body < html.endIndex, html[body] == ">" {
+                return html.index(after: body)
+            }
+            if body < html.endIndex, html[body] == "-" {
+                let afterDash = html.index(after: body)
+                if afterDash < html.endIndex, html[afterDash] == ">" {
+                    return html.index(after: afterDash)
+                }
+            }
+
+            var cursor = body
+            while cursor < html.endIndex {
+                if html[cursor] == "-" {
+                    let secondDash = html.index(after: cursor)
+                    if secondDash < html.endIndex, html[secondDash] == "-" {
+                        let afterDashes = html.index(after: secondDash)
+                        if afterDashes < html.endIndex, html[afterDashes] == ">" {
+                            return html.index(after: afterDashes)
+                        }
+                        if afterDashes < html.endIndex, html[afterDashes] == "!" {
+                            let afterBang = html.index(after: afterDashes)
+                            if afterBang < html.endIndex, html[afterBang] == ">" {
+                                return html.index(after: afterBang)
+                            }
+                        }
+                    }
+                }
+                cursor = html.index(after: cursor)
+            }
+            return nil
         }
 
         private func tagName(in html: String, from index: String.Index) -> String? {
@@ -295,12 +378,6 @@ import os.log
             return String(html[index ..< cursor])
         }
 
-        private func closingAngleAfterTagName(_ html: String, from index: String.Index) -> String.Index? {
-            guard isTagNameBoundary(html, at: index),
-                  let close = html[index...].firstIndex(of: ">") else { return nil }
-            return html.index(after: close)
-        }
-
         private func isTagNameBoundary(_ html: String, at index: String.Index) -> Bool {
             guard index < html.endIndex else { return false }
             let boundary = html[index]
@@ -309,7 +386,7 @@ import os.log
 
         private func isRawtextTag(_ name: String) -> Bool {
             switch name.lowercased() {
-            case "script", "style", "textarea", "title":
+            case "script", "style", "textarea", "title", "xmp":
                 true
             default:
                 false
@@ -317,7 +394,15 @@ import os.log
         }
 
         private func isHTMLWhitespace(_ character: Character) -> Bool {
-            character == " " || character == "\t" || character == "\n" || character == "\r" || character == "\u{000C}"
+            // Swift treats CR LF as one Character, so a boundary check has to accept that pair.
+            !character.unicodeScalars.isEmpty && character.unicodeScalars.allSatisfy { scalar in
+                switch scalar.value {
+                case 0x09, 0x0a, 0x0c, 0x0d, 0x20:
+                    true
+                default:
+                    false
+                }
+            }
         }
 
         private func buildSkipTagsJS(_ skipTags: [String]) -> String {
