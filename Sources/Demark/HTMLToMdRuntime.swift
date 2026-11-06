@@ -32,32 +32,104 @@ import os.log
         /// Convert HTML to Markdown using html-to-md
         /// All operations happen on the dedicated queue to ensure thread safety
         func convert(_ html: String, options: DemarkOptions) async throws -> String {
+            try Task.checkCancellation()
             if await !isInitializedAsync() {
                 try await initialize()
             }
+            try Task.checkCancellation()
 
             let optionsDict = buildOptionsDict(options)
             let optionsJSON = try optionsJSON(from: optionsDict)
             let escapedHTML = escapeHTMLForScript(html)
             let script = buildConversionScript(escapedHTML: escapedHTML, optionsJSON: optionsJSON)
 
-            return try await withCheckedThrowingContinuation { continuation in
-                queue.async { [weak self] in
-                    guard let self,
-                          let context = self.jsContext
-                    else {
-                        continuation.resume(throwing: DemarkError.jsContextCreationFailed)
-                        return
-                    }
+            // queue.async is not the caller's task, so Task.isCancelled there stays false.
+            // Record cancellation and resume with CancellationError instead of the markdown.
+            let result = ConversionResult()
+            return try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { continuation in
+                    guard result.adopt(continuation) else { return }
+                    queue.async { [weak self] in
+                        guard let self,
+                              let context = self.jsContext
+                        else {
+                            result.fail(DemarkError.jsContextCreationFailed)
+                            return
+                        }
 
-                    do {
-                        let markdown = try self.evaluate(script: script, in: context)
-                        self.logger.info("html-to-md conversion completed")
-                        continuation.resume(returning: markdown)
-                    } catch {
-                        self.logger.error("Conversion error: \(error)")
-                        continuation.resume(throwing: error)
+                        do {
+                            let markdown = try self.evaluate(script: script, in: context)
+                            self.logger.info("html-to-md conversion completed")
+                            result.succeed(markdown)
+                        } catch {
+                            self.logger.error("Conversion error: \(error)")
+                            result.fail(error)
+                        }
                     }
+                }
+            } onCancel: {
+                result.cancel()
+            }
+        }
+
+        /// Resumes the html-to-md continuation once. Cancellation wins over a converted string.
+        private final class ConversionResult: @unchecked Sendable {
+            private let lock = NSLock()
+            private var continuation: CheckedContinuation<String, Error>?
+            private var cancelled = false
+            private var resumed = false
+
+            func adopt(_ continuation: CheckedContinuation<String, Error>) -> Bool {
+                lock.lock()
+                if cancelled || resumed {
+                    resumed = true
+                    lock.unlock()
+                    continuation.resume(throwing: CancellationError())
+                    return false
+                }
+                self.continuation = continuation
+                lock.unlock()
+                return true
+            }
+
+            func cancel() {
+                lock.lock()
+                cancelled = true
+                guard !resumed else {
+                    lock.unlock()
+                    return
+                }
+                resumed = true
+                let continuation = self.continuation
+                self.continuation = nil
+                lock.unlock()
+                continuation?.resume(throwing: CancellationError())
+            }
+
+            func succeed(_ markdown: String) {
+                finish(.success(markdown))
+            }
+
+            func fail(_ error: Error) {
+                finish(.failure(error))
+            }
+
+            private func finish(_ result: Result<String, Error>) {
+                lock.lock()
+                guard !resumed else {
+                    lock.unlock()
+                    return
+                }
+                resumed = true
+                let continuation = self.continuation
+                self.continuation = nil
+                let wasCancelled = cancelled
+                lock.unlock()
+                guard let continuation else { return }
+                if wasCancelled {
+                    continuation.resume(throwing: CancellationError())
+                } else {
+                    continuation.resume(with: result)
                 }
             }
         }

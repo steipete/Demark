@@ -31,4 +31,29 @@ struct DemarkServiceConcurrencyTests {
             #expect(result.contains("**test**"))
         }
     }
+
+    @Test("Cancelled conversion does not return markdown")
+    func cancelledConversionDoesNotReturnMarkdown() async {
+        let html = "<h1>Hello</h1><p>Cancelled callers must not observe this paragraph.</p>"
+        for engine in [ConversionEngine.htmlToMd, ConversionEngine.turndown] {
+            let demark = Demark()
+            let task = Task {
+                try await demark.convertToMarkdown(html, options: DemarkOptions(engine: engine))
+            }
+            task.cancel()
+
+            switch await task.result {
+            case let .success(markdown):
+                #expect(
+                    Bool(false),
+                    "\(engine.rawValue) returned markdown after cancel: \(markdown)"
+                )
+            case let .failure(error):
+                #expect(
+                    error is CancellationError,
+                    "\(engine.rawValue) threw \(type(of: error)): \(error)"
+                )
+            }
+        }
+    }
 }

@@ -37,7 +37,13 @@ final class ConversionRuntime {
         switch options.engine {
         case .turndown:
             do {
-                rawMarkdown = try await turndownRuntime.convert(html, options: options)
+                try Task.checkCancellation()
+                let converted = try await turndownRuntime.convert(html, options: options)
+                try Task.checkCancellation()
+                rawMarkdown = converted
+            } catch let error as CancellationError {
+                // Cancellation is not an engine failure. html-to-md must not turn it into markdown.
+                throw error
             } catch {
                 logger.warning("Turndown failed (\(error)); falling back to html-to-md")
                 let fallback = DemarkOptions(
@@ -49,12 +55,17 @@ final class ConversionRuntime {
                     ignoreTags: options.ignoreTags,
                     emptyTags: options.emptyTags
                 )
-                rawMarkdown = try await htmlToMdRuntime.convert(html, options: fallback)
+                let converted = try await htmlToMdRuntime.convert(html, options: fallback)
+                try Task.checkCancellation()
+                rawMarkdown = converted
             }
         case .htmlToMd:
-            rawMarkdown = try await htmlToMdRuntime.convert(html, options: options)
+            let converted = try await htmlToMdRuntime.convert(html, options: options)
+            try Task.checkCancellation()
+            rawMarkdown = converted
         }
 
+        try Task.checkCancellation()
         return normalizeMarkdown(rawMarkdown, bulletMarker: options.bulletListMarker)
     }
 
