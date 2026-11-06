@@ -56,4 +56,21 @@ struct DemarkServiceConcurrencyTests {
             }
         }
     }
+
+    @Test("Normalization does not return markdown after cancellation")
+    func normalizationDoesNotReturnMarkdownAfterCancellation() async {
+        let runtime = ConversionRuntime()
+        let rawMarkdown = String(repeating: "* item\n", count: 40)
+        let task = Task { @MainActor () throws -> String in
+            try runtime.markdownAfterNormalization(rawMarkdown, bulletMarker: "-")
+        }
+        task.cancel()
+
+        switch await task.result {
+        case let .success(markdown):
+            #expect(Bool(false), "normalization returned markdown after cancel: \(markdown)")
+        case let .failure(error):
+            #expect(error is CancellationError, "threw \(type(of: error)): \(error)")
+        }
+    }
 }

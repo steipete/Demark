@@ -66,7 +66,14 @@ final class ConversionRuntime {
         }
 
         try Task.checkCancellation()
-        return normalizeMarkdown(rawMarkdown, bulletMarker: options.bulletListMarker)
+        return try markdownAfterNormalization(rawMarkdown, bulletMarker: options.bulletListMarker)
+    }
+
+    /// Normalize, then reject the result if the task was cancelled during the walk.
+    func markdownAfterNormalization(_ markdown: String, bulletMarker: String) throws -> String {
+        let normalized = normalizeMarkdown(markdown, bulletMarker: bulletMarker)
+        try Task.checkCancellation()
+        return normalized
     }
 
     /// Load URL and convert to Markdown
