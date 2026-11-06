@@ -94,7 +94,7 @@ struct DemarkIntegrationTests {
             #expect(rawXmp.contains("Tail"))
         }
 
-        @Test("turndown closer scan follows WebKit tag and comment ends")
+        @Test("malformed tags and comments do not drop the HTML tail")
         func turndownCloserScanFollowsWebKitEnds() async throws {
             let service = Demark()
             let options = DemarkOptions(engine: .turndown)
@@ -141,6 +141,45 @@ struct DemarkIntegrationTests {
             )
             #expect(emptyComment.contains("Head"))
             #expect(emptyComment.contains("Tail"))
+        }
+
+        @Test("a textarea value keeps characters around a false end tag")
+        func textareaValueKeepsFalseEnd() async throws {
+            let service = Demark()
+            let options = DemarkOptions(engine: .turndown, headingStyle: .setext)
+            let markdown = try await service.convertToMarkdown(
+                "<h1>Before</h1><textarea>before </textareax> after</textarea><p>Tail</p>",
+                options: options
+            )
+
+            #expect(markdown.contains("Before\n======"))
+            #expect(markdown.contains("before"))
+            #expect(markdown.contains("</textareax>"))
+            #expect(markdown.contains("after"))
+            #expect(markdown.contains("Tail"))
+        }
+
+        @Test("xmp, textarea, script, and style keep an x-turndown literal")
+        func rawTextKeepsXTurndownLiteral() async throws {
+            let service = Demark()
+            let visible = DemarkOptions(engine: .turndown)
+            // Script and style are removed unless the caller keeps them. Keeping them
+            // makes the raw literal visible in the markdown the shipped API returns.
+            let keptRaw = DemarkOptions(engine: .turndown, skipTags: ["script", "style"])
+            let samples: [(html: String, options: DemarkOptions)] = [
+                ("<xmp>literal </x-turndown> value</xmp><p>Tail</p>", visible),
+                ("<textarea>literal </x-turndown> value</textarea><p>Tail</p>", visible),
+                ("<script>literal </x-turndown> value</script><p>Tail</p>", keptRaw),
+                ("<style>literal </x-turndown> value</style><p>Tail</p>", keptRaw),
+            ]
+
+            for sample in samples {
+                let markdown = try await service.convertToMarkdown(sample.html, options: sample.options)
+                #expect(markdown.contains("literal"), "markdown: \(markdown)")
+                #expect(markdown.contains("value"), "markdown: \(markdown)")
+                #expect(markdown.contains("x-turndown"), "markdown: \(markdown)")
+                #expect(markdown.contains("Tail"), "markdown: \(markdown)")
+            }
         }
     #endif
 }
