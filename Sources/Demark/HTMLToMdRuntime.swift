@@ -38,7 +38,7 @@ import os.log
 
             let optionsDict = buildOptionsDict(options)
             let optionsJSON = try optionsJSON(from: optionsDict)
-            let escapedHTML = escapeHTMLForScript(html)
+            let escapedHTML = escapeHTMLForScript(htmlWithNormalizedNewlines(html))
             let script = buildConversionScript(escapedHTML: escapedHTML, optionsJSON: optionsJSON)
 
             return try await withCheckedThrowingContinuation { continuation in
@@ -154,6 +154,14 @@ import os.log
                 throw DemarkError.invalidInput("Failed to serialize options")
             }
             return optionsJSON
+        }
+
+        /// html-to-md deletes every CR LF pair before it parses. Turn those
+        /// pairs into LF here so words and preformatted lines stay separated.
+        private func htmlWithNormalizedNewlines(_ html: String) -> String {
+            html
+                .replacingOccurrences(of: "\r\n", with: "\n")
+                .replacingOccurrences(of: "\r", with: "\n")
         }
 
         private func escapeHTMLForScript(_ html: String) -> String {

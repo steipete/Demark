@@ -37,4 +37,25 @@ struct DemarkIntegrationTests {
 
         #expect(markdown.contains("Integration"))
     }
+
+    @Test("html-to-md keeps a break that arrived as CR LF")
+    func htmlToMdKeepsCarriageReturnLineFeed() async throws {
+        let service = Demark()
+        let options = DemarkOptions(engine: .htmlToMd)
+
+        let paragraph = try await service.convertToMarkdown("<p>Hello\r\nworld</p>", options: options)
+        #expect(paragraph.contains("Hello"))
+        #expect(paragraph.contains("world"))
+        #expect(!paragraph.contains("Helloworld"))
+
+        let pre = try await service.convertToMarkdown("<pre>one\r\ntwo</pre>", options: options)
+        #expect(pre.contains("one"))
+        #expect(pre.contains("two"))
+        #expect(pre.contains("\n"))
+
+        let lineFeed = try await service.convertToMarkdown("<p>Hello\nworld</p>", options: options)
+        #expect(lineFeed.contains("Hello"))
+        #expect(lineFeed.contains("world"))
+        #expect(!lineFeed.contains("Helloworld"))
+    }
 }
