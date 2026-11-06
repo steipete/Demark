@@ -43,7 +43,7 @@ import os.log
             let webView = try await ensureWebViewReady()
 
             let optionsJSON = try buildOptionsJSON(options)
-            let escapedHTML = escapeHTML(html)
+            let escapedHTML = escapeHTML(htmlWithoutTurndownRootCloser(html))
             let skipTagsJS = buildSkipTagsJS(options.skipTags)
             let ignoreTagsJS = try buildIgnoreTagsJS(options.ignoreTags)
             let jsCode = buildConversionScript(
@@ -168,6 +168,156 @@ import os.log
                 .replacingOccurrences(of: "\n", with: "\\n")
                 .replacingOccurrences(of: "\r", with: "\\r")
                 .replacingOccurrences(of: "\t", with: "\\t")
+        }
+
+        /// Turndown wraps the input in `<x-turndown id="turndown-root">` and converts
+        /// only that element. A closing tag in the caller HTML ends the wrapper early.
+        /// Quoted attributes, comments, and raw text keep the same character sequence.
+        private func htmlWithoutTurndownRootCloser(_ html: String) -> String {
+            var output = ""
+            output.reserveCapacity(html.count)
+            var index = html.startIndex
+
+            while index < html.endIndex {
+                if html[index] == "<" {
+                    if let end = skippedTurndownRootCloser(html, from: index) {
+                        index = end
+                        continue
+                    }
+                    index = appendMarkup(html, from: index, into: &output)
+                    continue
+                }
+                output.append(html[index])
+                index = html.index(after: index)
+            }
+
+            return output
+        }
+
+        private func skippedTurndownRootCloser(_ html: String, from index: String.Index) -> String.Index? {
+            let token = "</x-turndown"
+            guard let tokenEnd = html.index(index, offsetBy: token.count, limitedBy: html.endIndex),
+                  html[index ..< tokenEnd].lowercased() == token
+            else { return nil }
+            return closingAngleAfterTagName(html, from: tokenEnd)
+        }
+
+        private func appendMarkup(_ html: String, from index: String.Index, into output: inout String) -> String.Index {
+            if html[index...].hasPrefix("<!--") {
+                let searchFrom = html.index(index, offsetBy: 4)
+                if let end = html.range(of: "-->", range: searchFrom ..< html.endIndex) {
+                    output.append(contentsOf: html[index ..< end.upperBound])
+                    return end.upperBound
+                }
+                output.append(contentsOf: html[index...])
+                return html.endIndex
+            }
+
+            let next = html.index(after: index)
+            guard next < html.endIndex else {
+                output.append(html[index])
+                return html.endIndex
+            }
+
+            let marker = html[next]
+            let isEndTag = marker == "/"
+            let isStartTag = marker.isASCII && marker.isLetter
+            guard isEndTag || isStartTag || marker == "!" || marker == "?" else {
+                output.append(html[index])
+                return next
+            }
+
+            let nameIndex = isEndTag ? html.index(after: next) : next
+            let name = tagName(in: html, from: nameIndex)
+            let afterTag = appendTag(html, from: index, into: &output)
+            if isStartTag, let name, isRawtextTag(name) {
+                return appendRawtext(html, from: afterTag, endTag: name, into: &output)
+            }
+            return afterTag
+        }
+
+        private func appendRawtext(
+            _ html: String,
+            from index: String.Index,
+            endTag name: String,
+            into output: inout String
+        ) -> String.Index {
+            let token = "</\(name)"
+            var cursor = index
+            while cursor < html.endIndex {
+                guard let match = html.range(
+                    of: token,
+                    options: .caseInsensitive,
+                    range: cursor ..< html.endIndex
+                ) else {
+                    break
+                }
+                if isTagNameBoundary(html, at: match.upperBound) {
+                    output.append(contentsOf: html[cursor ..< match.lowerBound])
+                    return appendTag(html, from: match.lowerBound, into: &output)
+                }
+                cursor = match.upperBound
+            }
+            output.append(contentsOf: html[index...])
+            return html.endIndex
+        }
+
+        private func appendTag(_ html: String, from index: String.Index, into output: inout String) -> String.Index {
+            var cursor = index
+            var quote: Character?
+            while cursor < html.endIndex {
+                let character = html[cursor]
+                output.append(character)
+                cursor = html.index(after: cursor)
+                if let activeQuote = quote {
+                    if character == activeQuote {
+                        quote = nil
+                    }
+                    continue
+                }
+                if character == "\"" || character == "'" {
+                    quote = character
+                    continue
+                }
+                if character == ">" {
+                    return cursor
+                }
+            }
+            return cursor
+        }
+
+        private func tagName(in html: String, from index: String.Index) -> String? {
+            guard index < html.endIndex, html[index].isASCII, html[index].isLetter else { return nil }
+            var cursor = index
+            while cursor < html.endIndex, !isTagNameBoundary(html, at: cursor) {
+                cursor = html.index(after: cursor)
+            }
+            return String(html[index ..< cursor])
+        }
+
+        private func closingAngleAfterTagName(_ html: String, from index: String.Index) -> String.Index? {
+            guard isTagNameBoundary(html, at: index),
+                  let close = html[index...].firstIndex(of: ">") else { return nil }
+            return html.index(after: close)
+        }
+
+        private func isTagNameBoundary(_ html: String, at index: String.Index) -> Bool {
+            guard index < html.endIndex else { return false }
+            let boundary = html[index]
+            return boundary == ">" || boundary == "/" || isHTMLWhitespace(boundary)
+        }
+
+        private func isRawtextTag(_ name: String) -> Bool {
+            switch name.lowercased() {
+            case "script", "style", "textarea", "title":
+                true
+            default:
+                false
+            }
+        }
+
+        private func isHTMLWhitespace(_ character: Character) -> Bool {
+            character == " " || character == "\t" || character == "\n" || character == "\r" || character == "\u{000C}"
         }
 
         private func buildSkipTagsJS(_ skipTags: [String]) -> String {

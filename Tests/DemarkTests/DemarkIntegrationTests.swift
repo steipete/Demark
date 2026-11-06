@@ -37,4 +37,38 @@ struct DemarkIntegrationTests {
 
         #expect(markdown.contains("Integration"))
     }
+
+    #if canImport(WebKit)
+        @Test("a closing x-turndown tag does not drop the HTML tail")
+        func closingXTurndownTagKeepsTail() async throws {
+            let service = Demark()
+            let options = DemarkOptions(engine: .turndown)
+            let html = "<p>Hello</p></x-turndown><p>Tail</p>"
+
+            let markdown = try await service.convertToMarkdown(html, options: options)
+
+            #expect(markdown.contains("Hello"))
+            #expect(markdown.contains("Tail"))
+
+            let again = try await service.convertToMarkdown(
+                "<p>Again</p></x-turndown><p>After</p>",
+                options: options
+            )
+            #expect(again.contains("Again"))
+            #expect(again.contains("After"))
+
+            let upper = try await service.convertToMarkdown(
+                "<p>Upper</p></X-TURNDOWN><p>Kept</p>",
+                options: options
+            )
+            #expect(upper.contains("Upper"))
+            #expect(upper.contains("Kept"))
+
+            let titled = "<a href=\"https://example.com\" title=\"</x-turndown>\">Label</a><p>Tail</p>"
+            let titledMarkdown = try await service.convertToMarkdown(titled, options: options)
+            #expect(titledMarkdown.contains("Label"))
+            #expect(titledMarkdown.contains("Tail"))
+            #expect(titledMarkdown.contains("x-turndown"))
+        }
+    #endif
 }
