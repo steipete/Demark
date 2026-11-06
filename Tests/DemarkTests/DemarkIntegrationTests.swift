@@ -51,7 +51,8 @@ struct DemarkIntegrationTests {
         let pre = try await service.convertToMarkdown("<pre>one\r\ntwo</pre>", options: options)
         #expect(pre.contains("one"))
         #expect(pre.contains("two"))
-        #expect(pre.contains("\n"))
+        #expect(!pre.contains("onetwo"))
+        #expect(pre.contains("one\ntwo") || pre.contains("one\r\ntwo"))
 
         let lineFeed = try await service.convertToMarkdown("<p>Hello\nworld</p>", options: options)
         #expect(lineFeed.contains("Hello"))
