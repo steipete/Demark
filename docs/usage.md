@@ -42,6 +42,8 @@ func convertDocument(_ html: String) async throws -> String {
 
 Turndown removes `script` and `style` by default and preserves `del`, `ins`, `sup`, and `sub` as HTML. The two engines do not promise byte-for-byte identical Markdown; compare them with representative input before changing engines.
 
+Skip-tag names are treated as data, including names containing quotes. Turndown parses input as a detached HTML fragment, so an unexpected closing `x-turndown` tag cannot discard the following content.
+
 Bullet-marker normalization preserves fenced code content, including examples containing shorter fences or a different fence character. Lists after the closing fence still use the requested marker.
 
 ## Web pages

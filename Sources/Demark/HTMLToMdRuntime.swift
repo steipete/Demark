@@ -87,9 +87,10 @@ import os.log
                         }
 
                         // Set up error handling
+                        let log = self.logger
                         context.exceptionHandler = { _, exception in
                             if let error = exception?.toString() {
-                                self.logger.error("JS Exception: \(error)")
+                                log.error("JS Exception: \(error)")
                             }
                         }
 

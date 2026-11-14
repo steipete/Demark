@@ -117,6 +117,15 @@ swift test
 
 The default tests do not access the network. URL-loading integration tests are opt-in with `DEMARK_LIVE_TESTS=1 swift test --filter DemarkURLLoading`. CI also checks formatting and linting and builds the example app; [the release guide](docs/RELEASING.md) lists the full matrix.
 
+On macOS, install the same checksum-verified linters as CI (SwiftFormat 0.64.1 and SwiftLint 0.65.1):
+
+```sh
+bash scripts/install-linters.sh
+PATH="$PWD/.build/linters:$PATH" ./scripts/lint.sh
+```
+
+The versions and archive checksums live in `scripts/install-linters.sh`; update them together after validating both lint configurations.
+
 ## Credits
 
 Demark bundles [Turndown.js](https://github.com/mixmark-io/turndown) by Dom Christie and [html-to-md](https://github.com/stonehank/html-to-md). Thanks also to the Swift community and WebKit team for the language and platform runtimes the package builds on.
