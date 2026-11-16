@@ -2,9 +2,13 @@
 
 ## Unreleased
 
-- Pin CI and local lint tooling to SwiftFormat 0.64.1 and SwiftLint 0.65.1 with checksum-verified downloads so upstream formatting changes do not break unchanged code.
+## [1.2.2] - 2026-11-15
+
+**Highlights:** HTML conversion now prevents JavaScript execution through custom skip-tag names, preserves content after closing `x-turndown` tags, and releases the html-to-md runtime after conversion.
+
 - Prevent custom skip-tag names from executing JavaScript, retain HTML after closing `x-turndown` tags, and release the html-to-md runtime after conversion. Thanks @SebTardif!
 - Update bundled Turndown to 7.2.5, reducing repeated string concatenation during conversion.
+- Pin CI and local lint tooling to SwiftFormat 0.64.1 and SwiftLint 0.65.1 with checksum-verified downloads so upstream formatting changes do not break unchanged code.
 - Move CI and release verification to Xcode 27 runners while retaining macOS 14 and the existing Apple platform minimums.
 
 ## [1.2.1] - 2026-09-13
