@@ -37,7 +37,13 @@ final class ConversionRuntime {
         switch options.engine {
         case .turndown:
             do {
-                rawMarkdown = try await turndownRuntime.convert(html, options: options)
+                try Task.checkCancellation()
+                let converted = try await turndownRuntime.convert(html, options: options)
+                try Task.checkCancellation()
+                rawMarkdown = converted
+            } catch let error as CancellationError {
+                // Cancellation is not an engine failure. html-to-md must not turn it into markdown.
+                throw error
             } catch {
                 logger.warning("Turndown failed (\(error)); falling back to html-to-md")
                 let fallback = DemarkOptions(
@@ -49,13 +55,25 @@ final class ConversionRuntime {
                     ignoreTags: options.ignoreTags,
                     emptyTags: options.emptyTags
                 )
-                rawMarkdown = try await htmlToMdRuntime.convert(html, options: fallback)
+                let converted = try await htmlToMdRuntime.convert(html, options: fallback)
+                try Task.checkCancellation()
+                rawMarkdown = converted
             }
         case .htmlToMd:
-            rawMarkdown = try await htmlToMdRuntime.convert(html, options: options)
+            let converted = try await htmlToMdRuntime.convert(html, options: options)
+            try Task.checkCancellation()
+            rawMarkdown = converted
         }
 
-        return normalizeMarkdown(rawMarkdown, bulletMarker: options.bulletListMarker)
+        try Task.checkCancellation()
+        return try markdownAfterNormalization(rawMarkdown, bulletMarker: options.bulletListMarker)
+    }
+
+    /// Normalize, then reject the result if the task was cancelled during the walk.
+    func markdownAfterNormalization(_ markdown: String, bulletMarker: String) throws -> String {
+        let normalized = normalizeMarkdown(markdown, bulletMarker: bulletMarker)
+        try Task.checkCancellation()
+        return normalized
     }
 
     /// Load URL and convert to Markdown
